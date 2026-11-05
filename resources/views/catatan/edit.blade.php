@@ -1,0 +1,163 @@
+@extends('layouts.app')
+
+@section('title', 'Edit Catatan: ' . $catatan->judul)
+@section('page-title', 'Edit Catatan Belajar')
+@section('page-subtitle', 'Perbarui ringkasan atau keterangan materi pelajaran.')
+
+@section('content')
+<div class="max-w-3xl mx-auto">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-xs text-slate-500 mb-4">
+        <a href="{{ route('dashboard') }}" class="hover:text-slate-800">Dashboard</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        <a href="{{ route('catatan.index') }}" class="hover:text-slate-800">Semua Catatan</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        <a href="{{ route('catatan.show', $catatan->id) }}" class="hover:text-slate-800 truncate max-w-xs">{{ $catatan->judul }}</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        <span class="text-[#2F6F64] font-semibold">Edit</span>
+    </nav>
+
+    <!-- Card Form -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6 md:p-8 shadow-soft">
+        <div class="pb-5 mb-6 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Perbarui Catatan Materi</h2>
+                    <p class="text-xs text-slate-500">Edit informasi di bawah ini lalu simpan perubahan.</p>
+                </div>
+            </div>
+            <div class="text-xs text-slate-500 hidden sm:block">
+                ID Catatan: #{{ $catatan->id }}
+            </div>
+        </div>
+
+        <form action="{{ route('catatan.update', $catatan->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" data-ajax-form>
+            @csrf
+            @method('PUT')
+
+            <!-- Input Judul -->
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label for="judul" class="block text-sm font-semibold text-slate-800">
+                        Judul Catatan <span class="text-rose-500">*</span>
+                    </label>
+                    <span id="judul-counter" class="text-xs text-slate-400">0 / 150</span>
+                </div>
+                <input type="text" 
+                       name="judul" 
+                       id="judul" 
+                       maxlength="150"
+                       value="{{ old('judul', $catatan->judul) }}"
+                       placeholder="Contoh: Konfigurasi Virtual Host Apache & Nginx di Debian" 
+                       class="w-full px-4 py-2.5 bg-slate-50 border @error('judul') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition"
+                       required>
+                @error('judul')
+                    <p class="text-xs text-rose-600 mt-1.5 flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                        <span>{{ $message }}</span>
+                    </p>
+                @enderror
+            </div>
+
+            <!-- Input Kategori -->
+            <div>
+                <label for="kategori" class="block text-sm font-semibold text-slate-800 mb-1.5">
+                    Kategori Pelajaran <span class="text-rose-500">*</span>
+                </label>
+                <select name="kategori" 
+                        id="kategori" 
+                        class="w-full px-4 py-2.5 bg-slate-50 border @error('kategori') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition text-slate-700"
+                        required>
+                    <option value="" disabled>-- Pilih Kategori Mata Pelajaran --</option>
+                    @foreach($kategoriList as $kat)
+                        <option value="{{ $kat }}" {{ old('kategori', $catatan->kategori) == $kat ? 'selected' : '' }}>
+                            {{ $kat }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('kategori')
+                    <p class="text-xs text-rose-600 mt-1.5 flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                        <span>{{ $message }}</span>
+                    </p>
+                @enderror
+            </div>
+
+            @include('components.document-upload', ['catatan' => $catatan, 'returnUrl' => route('catatan.edit', $catatan, false)])
+
+            <!-- Input Isi Materi -->
+            <div>
+                <label for="isi" class="block text-sm font-semibold text-slate-800 mb-1.5">
+                    Isi Catatan Materi <span class="text-slate-400">(opsional jika ada lampiran)</span>
+                </label>
+                <textarea name="isi" 
+                          id="isi" 
+                          rows="10" 
+                          placeholder="Tuliskan ringkasan materi, baris kode, rumus, atau poin-poin penjelasan penting di sini..."
+                          class="w-full px-4 py-3 bg-slate-50 border @error('isi') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition leading-relaxed"
+                          >{{ old('isi', $catatan->isi) }}</textarea>
+                @error('isi')
+                    <p class="text-xs text-rose-600 mt-1.5 flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                        <span>{{ $message }}</span>
+                    </p>
+                @enderror
+            </div>
+
+            <!-- Checkbox Favorit -->
+            <div class="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" 
+                           name="favorit" 
+                           value="1" 
+                           {{ old('favorit', $catatan->favorit) ? 'checked' : '' }}
+                           class="w-4 h-4 text-[#2F6F64] bg-white border-slate-300 rounded focus:ring-[#2F6F64] focus:ring-2">
+                    <div>
+                        <span class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="star" class="w-4 h-4 text-amber-500 fill-amber-400"></i>
+                            <span>Tandai sebagai Catatan Favorit</span>
+                        </span>
+                        <p class="text-xs text-slate-500 mt-0.5">Catatan favorit akan muncul di menu cepat dan berstatus bintang.</p>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+                <button type="button" 
+                        onclick="openDeleteModal('{{ route('catatan.destroy', $catatan->id) }}', '{{ addslashes($catatan->judul) }}')" 
+                        class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1.5 p-2 rounded-lg hover:bg-rose-50 transition">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <span>Hapus Catatan Ini</span>
+                </button>
+
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('catatan.show', $catatan->id) }}" class="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition">
+                        Batal
+                    </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2F6F64] text-white text-sm font-semibold rounded-xl hover:bg-[#24574F] transition-all shadow-md shadow-[#2F6F64]/20">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Simpan Perubahan</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Live Character Counter for Judul
+    const judulInput = document.getElementById('judul');
+    const counter = document.getElementById('judul-counter');
+    if (judulInput && counter) {
+        const updateCounter = () => {
+            counter.textContent = `${judulInput.value.length} / 150`;
+        };
+        judulInput.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+</script>
+@endsection
