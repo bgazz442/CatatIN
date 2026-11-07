@@ -11,6 +11,10 @@ class SettingsController extends Controller
 {
     public function index(Request $request): View
     {
+        if ($request->user()?->role === 'admin') {
+            return redirect()->route('admin.settings.edit');
+        }
+
         return view('settings', [
             'themePreference' => $request->user()?->themePreference,
         ]);

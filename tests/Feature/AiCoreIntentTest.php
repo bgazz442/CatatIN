@@ -26,7 +26,7 @@ class AiCoreIntentTest extends TestCase
         $this->assertSame('website', $router->route('Apa saja status task yang tersedia?')['primary_intent']);
         $this->assertSame('productivity', $router->route('Bagaimana status tugas saya untuk laporan PKL?')['primary_intent']);
         $this->assertSame('productivity', $router->route('Apa deskripsi tugas laporan PKL?')['primary_intent']);
-        $this->assertSame('productivity', $router->route('Apa aktivitas terbaru saya?')['primary_intent']);
+        $this->assertSame('retired_feature', $router->route('Apa aktivitas terbaru saya?')['primary_intent']);
         $this->assertSame('ambiguous', $router->route('Bagaimana progres saya?')['primary_intent']);
         $this->assertSame('unsupported', $router->route('Bagaimana fitur pembayaran berlangganan di CatatIn?')['primary_intent']);
     }
@@ -95,8 +95,6 @@ class AiCoreIntentTest extends TestCase
             'productivity' => [
                 'Goal gw gimana?',
                 'Tugas saya yang belum selesai apa?',
-                'Aktivitas saya minggu ini apa saja?',
-                'aktivitas gw hari ini apa saja',
             ],
             'learning' => [
                 'Coba rangkum catatan saya.',
@@ -126,14 +124,12 @@ class AiCoreIntentTest extends TestCase
             'Berapa catatan dalam kategori Pemrograman?' => ['workspace'],
             'Apa saja catatan dalam kategori Pemrograman?' => ['workspace', 'learning'],
             'Apa saja task dalam kategori Proyek?' => ['workspace', 'productivity'],
-            'Apa saja aktivitas dalam kategori Olahraga?' => ['workspace', 'productivity'],
             'Bagaimana kondisi workspace saya?' => ['workspace'],
             'Ringkas seluruh workspace saya.' => ['workspace'],
             'Apa saja yang saya punya di CatatIn?' => ['workspace'],
             'Berapa jumlah seluruh catatan saya?' => ['workspace'],
             'Berapa task yang belum selesai?' => ['workspace'],
             'Bagaimana progres goal saya?' => ['workspace'],
-            'Berapa aktivitas yang sudah saya catat?' => ['workspace'],
             'Kategori mana yang paling banyak memiliki catatan?' => ['workspace'],
         ];
 
@@ -153,6 +149,29 @@ class AiCoreIntentTest extends TestCase
         $this->assertSame(['website'], $router->route('Jelaskan lebih detail.', $websiteHistory)['intents']);
         $this->assertSame(['learning'], $router->route('Berikan contoh.', $learningHistory)['intents']);
         $this->assertSame('ambiguous', $router->route('Jelaskan lebih detail.')['primary_intent']);
+    }
+
+    public function test_retired_activity_questions_do_not_activate_retrievers(): void
+    {
+        $router = app(AiQueryRouter::class);
+
+        foreach ([
+            'Bagaimana cara menggunakan Daily Activities?',
+            'Apakah saya bisa mencatat aktivitas harian?',
+            'Apa aktivitas terbaru saya?',
+        ] as $question) {
+            $route = $router->route($question);
+            $this->assertSame('retired_feature', $route['primary_intent']);
+            $this->assertSame([], $route['intents']);
+        }
+    }
+
+    public function test_feature_list_and_data_access_questions_use_current_website_knowledge_only(): void
+    {
+        $router = app(AiQueryRouter::class);
+
+        $this->assertSame('feature_list', $router->route('Apa saja fitur yang tersedia di CatatIn?')['primary_intent']);
+        $this->assertSame('data_access', $router->route('Apa saja data yang bisa kamu akses dari website?')['primary_intent']);
     }
 
     public function test_greeting_chat_returns_short_answer_without_ollama_or_sources(): void

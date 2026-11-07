@@ -4,7 +4,7 @@
 
 **CatatIn** adalah aplikasi catatan belajar digital yang dirancang khusus untuk siswa SMK jurusan **Rekayasa Perangkat Lunak (RPL)**. Aplikasi ini mendemonstrasikan penerapan arsitektur **MVC (Model-View-Controller)**, operasi **CRUD**, validasi server-side, migrasi basis data, dan antarmuka modern menggunakan Tailwind CSS.
 
-Aplikasi berfungsi sepenuhnya secara lokal tanpa login, sangat cocok untuk media pembelajaran, portofolio praktik, dan bahan ujian kompetensi kejuruan.
+Aplikasi mendukung autentikasi pengguna dan pengelolaan materi serta produktivitas secara lokal, cocok untuk media pembelajaran, portofolio praktik, dan bahan ujian kompetensi kejuruan.
 
 ---
 
@@ -62,23 +62,32 @@ mysql -u root -e "CREATE DATABASE IF NOT EXISTS catatin_db;"
 ```
 
 ### 3. Menjalankan Migrasi Tabel
-Jalankan migrasi untuk membuat tabel `catatan`:
+Jalankan migrasi untuk membuat tabel aplikasi dan menambahkan kolom role/status akun:
 ```bash
 php artisan migrate
 ```
+
+### 4. Setup akun Admin (opsional)
+Atur `ADMIN_PASSWORD` hanya di file `.env` lokal dengan password unik minimal 16 karakter yang memiliki huruf besar, huruf kecil, angka, dan simbol. Jangan bagikan atau commit nilainya. Buat/perbarui akun Admin secara aman dengan seeder berikut (aman dijalankan ulang dan tidak mengganti password Admin yang sudah ada):
+```bash
+php artisan db:seed --class=AdminSeeder
+```
+Email Admin ditetapkan sebagai `admin54321@gmail.com`. Seeder hanya membuat akun baru dengan password kuat dari `ADMIN_PASSWORD`; akun yang sudah ber-role Admin dibiarkan tanpa perubahan. Jika email tersebut sudah dimiliki akun non-admin, seeder berhenti dan meminta verifikasi serta penyelesaian konflik secara manual, bukan menaikkan role berdasarkan email saja. Login Admin menuju `/admin/dashboard`; halaman itu hanya dapat diakses akun Admin aktif. Registrasi publik tidak dapat membuat email Admin atau menetapkan role.
+
+Dashboard Admin menyediakan statistik database, daftar pengguna dengan pencarian/filter/paginasi, detail akun, pengelolaan akun, serta pengaturan profil Admin. Hanya alamat Admin utama yang dikonfigurasi yang dapat memberi atau mencabut role Admin dan mengelola akun Admin lain; admin tidak dapat mengubah atau menghapus akunnya sendiri. Admin memakai layout terpisah dan tidak dapat membuka route fitur user; seluruh route administrasi dilindungi middleware `auth` dan `admin`.
 
 *(Opsional)* Jika ingin mengisi data contoh materi pelajaran untuk demonstrasi langsung:
 ```bash
 php artisan db:seed --class=CatatanSeeder
 ```
 
-### 4. Kompilasi Aset Frontend (Tailwind CSS)
+### 5. Kompilasi Aset Frontend (Tailwind CSS)
 ```bash
 npm run build
 ```
 *(Atau gunakan `npm run dev` untuk live reload saat pengembangan)*
 
-### 5. Menjalankan Server Lokal
+### 6. Menjalankan Server Lokal
 ```bash
 php artisan serve
 ```
@@ -116,6 +125,4 @@ Hasil pengujian mencakup:
 
 ## 🔒 Catatan Keamanan & Batasan Penggunaan
 
-Aplikasi CatatIn dirancang untuk kebutuhan **praktik lokal dan demonstrasi akademik**.
-- Tidak menggunakan autentikasi/login (semua catatan dapat diakses secara publik pada jaringan lokal).
-- Tidak boleh dideploy ke production tanpa menambahkan layer autentikasi per pengguna (User multi-tenancy) dan otorisasi kepemilikan catatan.
+Aplikasi CatatIn dirancang untuk kebutuhan **praktik lokal dan demonstrasi akademik**. Halaman Admin memerlukan akun aktif ber-role `admin`; akses ditolak untuk guest dan user biasa. Gunakan konfigurasi rahasia lingkungan yang aman dan tinjau seluruh konfigurasi deployment sebelum penggunaan production.

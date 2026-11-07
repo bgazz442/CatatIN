@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Catatan;
 use App\Models\Category;
-use App\Models\DailyActivity;
 use App\Models\Goal;
 use App\Models\Task;
-use App\Services\ActivityDurationCalculator;
 use App\Services\AI\LearningMaterialIndexer;
 use App\Services\AttachmentManager;
 use Illuminate\Http\Request;
@@ -21,6 +19,10 @@ class CatatanController extends Controller
     /** Menampilkan ringkasan produktivitas pengguna. */
     public function dashboard()
     {
+        if (auth()->user()?->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
         $userId = auth()->id();
 
         $taskCounts = $userId
@@ -35,12 +37,6 @@ class CatatanController extends Controller
             ? Task::query()->where('user_id', $userId)->whereNotIn('status', ['completed'])
                 ->where('due_date', '<', today())->with('category')->orderBy('due_date')->limit(5)->get()
             : collect();
-        $todayActivityQuery = $userId
-            ? DailyActivity::query()->where('user_id', $userId)->whereDate('activity_date', today())
-            : DailyActivity::query()->whereRaw('1 = 0');
-        $todayActivityCount = (clone $todayActivityQuery)->count();
-        $todayActivityMinutes = app(ActivityDurationCalculator::class)->totalMinutes($todayActivityQuery);
-        $todayActivities = (clone $todayActivityQuery)->with('category')->orderBy('start_time')->limit(10)->get();
         $activeGoalQuery = $userId
             ? Goal::query()->where('user_id', $userId)->where('status', 'active')
             : Goal::query()->whereRaw('1 = 0');
@@ -51,9 +47,6 @@ class CatatanController extends Controller
             'taskCounts',
             'upcomingTasks',
             'overdueTasks',
-            'todayActivities',
-            'todayActivityMinutes',
-            'todayActivityCount',
             'activeGoalCount',
             'activeGoals'
         ));

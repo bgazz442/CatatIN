@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Catatan;
 use App\Models\Category;
-use App\Models\DailyActivity;
 use App\Models\Goal;
 use App\Models\GoalProgressEntry;
 use App\Models\AiMaterialChunk;
@@ -87,73 +86,6 @@ class ProductivityFeatureTest extends TestCase
         $this->assertDatabaseHas('tasks', ['id' => $otherTask->id, 'user_id' => $otherUser->id]);
         $this->delete(route('tasks.destroy', $task))->assertRedirect(route('tasks.index'));
         $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
-    }
-
-    public function test_activities_validate_times_and_sum_only_the_current_users_filtered_activities(): void
-    {
-        $owner = User::factory()->create();
-        $otherUser = User::factory()->create();
-        $category = Category::query()->firstOrCreate(['name' => 'Activity Test']);
-
-        DailyActivity::create([
-            'user_id' => $owner->id,
-            'category_id' => $category->id,
-            'title' => 'Study session',
-            'activity_date' => today()->toDateString(),
-            'start_time' => '09:15',
-            'end_time' => '10:45',
-        ]);
-        DailyActivity::create([
-            'user_id' => $otherUser->id,
-            'title' => 'Other user session',
-            'activity_date' => today()->toDateString(),
-            'start_time' => '08:00',
-            'end_time' => '12:00',
-        ]);
-
-        $this->actingAs($owner)->get(route('activities.index', [
-            'date' => today()->toDateString(),
-            'category_id' => $category->id,
-        ]))
-            ->assertOk()
-            ->assertSee('Study session')
-            ->assertDontSee('Other user session')
-            ->assertSee('1 jam 30 menit');
-
-        $this->post(route('activities.store'), [
-            'title' => 'Activity created through form',
-            'activity_date' => today()->toDateString(),
-            'category_id' => $category->id,
-            'start_time' => '13:00',
-            'end_time' => '14:00',
-        ])->assertRedirect(route('activities.index'));
-        $activity = DailyActivity::query()->where('title', 'Activity created through form')->firstOrFail();
-        $this->put(route('activities.update', $activity), [
-            'title' => 'Activity updated through form',
-            'activity_date' => today()->toDateString(),
-            'category_id' => $category->id,
-            'start_time' => '13:30',
-            'end_time' => '14:30',
-        ])->assertRedirect(route('activities.index'));
-        $this->assertSame('Activity updated through form', $activity->fresh()->title);
-        $this->delete(route('activities.destroy', $activity))->assertRedirect(route('activities.index'));
-        $this->assertDatabaseMissing('daily_activities', ['id' => $activity->id]);
-
-        $this->post(route('activities.store'), [
-            'title' => 'Invalid time range',
-            'activity_date' => today()->toDateString(),
-            'category_id' => $category->id,
-            'start_time' => '11:00',
-            'end_time' => '10:00',
-        ])->assertSessionHasErrors('end_time');
-
-        $foreignActivity = DailyActivity::create([
-            'user_id' => $otherUser->id,
-            'title' => 'Foreign activity edit target',
-            'activity_date' => today(),
-        ]);
-        $this->get(route('activities.edit', $foreignActivity))->assertNotFound();
-        $this->delete(route('activities.destroy', $foreignActivity))->assertNotFound();
     }
 
     public function test_goal_progress_is_append_only_accumulates_and_marks_goal_complete(): void
@@ -332,7 +264,7 @@ class ProductivityFeatureTest extends TestCase
         ])->assertRedirectContains('login_required=1');
     }
 
-    public function test_dashboard_and_productivity_retrieval_only_include_the_authenticated_users_records(): void
+    public function test_dashboard_and_productivity_retrieval_only_include_the_authenticated_users_tasks_and_goals(): void
     {
         $owner = User::factory()->create();
         $otherUser = User::factory()->create();
@@ -350,20 +282,6 @@ class ProductivityFeatureTest extends TestCase
             'title' => 'Owner overdue task',
             'status' => 'in_progress',
             'due_date' => today()->subDay(),
-        ]);
-        DailyActivity::create([
-            'user_id' => $owner->id,
-            'title' => 'Owner study',
-            'activity_date' => today(),
-            'start_time' => '09:00',
-            'end_time' => '10:00',
-        ]);
-        DailyActivity::create([
-            'user_id' => $otherUser->id,
-            'title' => 'Foreign study',
-            'activity_date' => today(),
-            'start_time' => '09:00',
-            'end_time' => '12:00',
         ]);
         $goal = Goal::create([
             'user_id' => $owner->id,
@@ -393,20 +311,16 @@ class ProductivityFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('Owner task')
             ->assertSee('Owner overdue task')
-            ->assertSee('Owner study')
             ->assertSee('Owner target')
             ->assertDontSee('Foreign task')
-            ->assertDontSee('Foreign study')
             ->assertDontSee('Owner private note')
             ->assertDontSee('Foreign private note');
 
         $context = app(ProductivityContextRetriever::class)
-            ->retrieve($owner->id, 'Apa tugas saya, aktivitas hari ini, dan progres target saya?');
+            ->retrieve($owner->id, 'Apa tugas saya dan progres target saya?');
         $this->assertStringContainsString('Owner task', $context['context']);
-        $this->assertStringContainsString('Owner study', $context['context']);
         $this->assertStringContainsString('Owner target', $context['context']);
         $this->assertStringNotContainsString('Foreign task', $context['context']);
-        $this->assertStringNotContainsString('Foreign study', $context['context']);
         $this->assertNotEmpty($context['sources']);
     }
 
@@ -441,7 +355,7 @@ class ProductivityFeatureTest extends TestCase
         $this->assertNotContains('media-favorite', array_column($context['sources'], 'type'));
     }
 
-    public function test_productivity_list_and_form_pages_render(): void
+    public function test_task_and_goal_list_and_form_pages_render(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);
@@ -449,8 +363,6 @@ class ProductivityFeatureTest extends TestCase
         foreach ([
             route('tasks.index'),
             route('tasks.create'),
-            route('activities.index'),
-            route('activities.create'),
             route('goals.index'),
             route('goals.create'),
         ] as $url) {
@@ -458,11 +370,6 @@ class ProductivityFeatureTest extends TestCase
         }
 
         $task = Task::create(['user_id' => $user->id, 'title' => 'Form render task', 'status' => 'pending']);
-        $activity = DailyActivity::create([
-            'user_id' => $user->id,
-            'title' => 'Form render activity',
-            'activity_date' => today(),
-        ]);
         $goal = Goal::create([
             'user_id' => $user->id,
             'name' => 'Form render goal',
@@ -474,7 +381,6 @@ class ProductivityFeatureTest extends TestCase
         ]);
 
         $this->get(route('tasks.edit', $task))->assertOk();
-        $this->get(route('activities.edit', $activity))->assertOk();
         $this->get(route('goals.show', $goal))->assertOk();
         $this->get(route('goals.edit', $goal))->assertOk();
     }
@@ -491,11 +397,11 @@ class ProductivityFeatureTest extends TestCase
                 'Menu Utama',
                 'Dashboard',
                 'Task Manager',
-                'Daily Activity',
                 'Goal Tracker',
                 'CatatIn Assistant',
                 'Pengaturan',
             ])
+            ->assertDontSee('Daily Activity')
             ->assertDontSee('Catatan Belajar')
             ->assertDontSee('Catatan / Media Favorit')
             ->assertDontSee('Media Belajar')
@@ -525,7 +431,7 @@ class ProductivityFeatureTest extends TestCase
             ->assertDontSee('Guest must not see this task');
 
         $this->get(route('tasks.index'))->assertRedirect();
-        $this->get(route('activities.index'))->assertRedirect();
+        $this->get('/aktivitas')->assertNotFound();
         $this->get(route('goals.index'))->assertRedirect();
         $this->get(route('catatan.index'))->assertRedirect();
         $this->post(route('ai.chat'), ['message' => 'Can I access this?'])->assertRedirect();
@@ -634,35 +540,6 @@ class ProductivityFeatureTest extends TestCase
         $goal->delete();
         $retrieved = app(ProductivityContextRetriever::class)->retrieve($owner->id, 'Berapa progres goal saya sekarang?');
         $this->assertStringNotContainsString('Menguasai Laravel', $retrieved['context']);
-
-        $activity = DailyActivity::create([
-            'user_id' => $owner->id,
-            'title' => 'Belajar Algoritma',
-            'activity_date' => today(),
-            'start_time' => '09:00',
-            'end_time' => '10:00',
-            'category_id' => Category::query()->firstOrCreate(['name' => 'Activity Freshness'])->id,
-        ]);
-        DailyActivity::create([
-            'user_id' => $otherUser->id,
-            'title' => 'Aktivitas rahasia pengguna lain',
-            'activity_date' => today(),
-        ]);
-        $retrieved = app(ProductivityContextRetriever::class)->retrieve($owner->id, 'Aktivitas saya hari ini apa saja?');
-        $this->assertStringContainsString('Belajar Algoritma', $retrieved['context']);
-        $this->assertStringNotContainsString('Aktivitas rahasia pengguna lain', $retrieved['context']);
-        $activity->update([
-            'title' => 'Mengerjakan latihan algoritma',
-            'description' => 'Latihan pencarian dan pengurutan',
-            'category_id' => Category::query()->firstOrCreate(['name' => 'Project Freshness'])->id,
-        ]);
-        $retrieved = app(ProductivityContextRetriever::class)->retrieve($owner->id, 'Aktivitas kategori Project minggu ini');
-        $this->assertStringContainsString('Mengerjakan latihan algoritma', $retrieved['context']);
-        $this->assertStringNotContainsString('Belajar Algoritma', $retrieved['context']);
-        $this->assertStringContainsString('Latihan pencarian dan pengurutan', $retrieved['context']);
-        $activity->delete();
-        $retrieved = app(ProductivityContextRetriever::class)->retrieve($owner->id, 'Aktivitas minggu ini apa saja?');
-        $this->assertStringNotContainsString('Mengerjakan latihan algoritma', $retrieved['context']);
 
         $note = Catatan::create([
             'user_id' => $owner->id,
@@ -848,30 +725,15 @@ class ProductivityFeatureTest extends TestCase
             'start_date' => today(),
             'status' => 'active',
         ]);
-        DailyActivity::create([
-            'user_id' => $owner->id,
-            'category_id' => $category->id,
-            'title' => 'Alpha study activity',
-            'activity_date' => today(),
-        ]);
-        DailyActivity::create([
-            'user_id' => $otherUser->id,
-            'category_id' => $category->id,
-            'title' => 'Foreign alpha activity',
-            'activity_date' => today(),
-        ]);
-
         $workspace = app(WorkspaceContextRetriever::class)->retrieve($owner->id, 'Bagaimana kondisi workspace saya?');
         $this->assertStringContainsString('2 catatan', $workspace['context']);
         $this->assertStringContainsString('2 total; status terpisah: pending 1, sedang dikerjakan 0, tuntas 1.', $workspace['context']);
         $this->assertStringContainsString('Jumlah goal: 1; total progres tersimpan 7.00 dari 10.00', $workspace['context']);
-        $this->assertStringContainsString('Aktivitas tercatat: 1.', $workspace['context']);
-        $this->assertStringContainsString('Workspace Alpha: 2 catatan / 2 tugas / 1 aktivitas.', $workspace['context']);
-        $this->assertStringContainsString('Workspace Empty: 0 catatan / 0 tugas / 0 aktivitas.', $workspace['context']);
+        $this->assertStringContainsString('Workspace Alpha: 2 catatan / 2 tugas.', $workspace['context']);
+        $this->assertStringContainsString('Workspace Empty: 0 catatan / 0 tugas.', $workspace['context']);
         $this->assertStringContainsString('Alpha database notes', $workspace['context']);
         $this->assertStringContainsString('Alpha pending task', $workspace['context']);
         $this->assertStringContainsString('Alpha study goal', $workspace['context']);
-        $this->assertStringContainsString('Alpha study activity', $workspace['context']);
         $this->assertStringNotContainsString('Foreign alpha', $workspace['context']);
         $this->assertSame(2, $workspace['facts']['notes_count']);
         $this->assertSame(2, $workspace['facts']['tasks_count']);
@@ -886,11 +748,6 @@ class ProductivityFeatureTest extends TestCase
         $this->assertStringContainsString('Alpha completed task', $taskCategoryContext['context']);
         $this->assertStringNotContainsString('Foreign alpha task', $taskCategoryContext['context']);
 
-        $activityCategoryContext = app(ProductivityContextRetriever::class)
-            ->retrieve($owner->id, 'Apa saja aktivitas dalam kategori Workspace Alpha?');
-        $this->assertStringContainsString('Alpha study activity', $activityCategoryContext['context']);
-        $this->assertStringNotContainsString('Foreign alpha activity', $activityCategoryContext['context']);
-
         $noteCategoryContext = app(LearningMaterialRetriever::class)
             ->retrieve($owner->id, 'Apa saja catatan dalam kategori Workspace Alpha?');
         $this->assertStringContainsString('Alpha database notes', $noteCategoryContext['context']);
@@ -900,7 +757,7 @@ class ProductivityFeatureTest extends TestCase
             ->assertRedirect(route('categories.index'));
         $renamedWorkspace = app(WorkspaceContextRetriever::class)
             ->retrieve($owner->id, 'Kategori apa saja yang tersedia?');
-        $this->assertStringContainsString('Workspace Renamed: 2 catatan / 2 tugas / 1 aktivitas.', $renamedWorkspace['context']);
+        $this->assertStringContainsString('Workspace Renamed: 2 catatan / 2 tugas.', $renamedWorkspace['context']);
         $this->assertStringNotContainsString('Workspace Alpha:', $renamedWorkspace['context']);
         $this->assertSame('Workspace Renamed', $note->fresh()->kategori);
 

@@ -261,19 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
         close.addEventListener('click', () => dismissNotification(notification));
     };
 
-    const showFormErrors = (form, errors) => {
+    const showFormErrors = (errors) => {
         const messages = Object.values(errors || {}).flat().filter(Boolean);
         const message = messages.join(' ');
-        let errorBox = form.querySelector('[data-ajax-errors]');
-        if (!errorBox) {
-            errorBox = document.createElement('div');
-            errorBox.dataset.ajaxErrors = 'true';
-            errorBox.className = 'mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800';
-            errorBox.setAttribute('role', 'alert');
-            form.prepend(errorBox);
-        }
-        errorBox.textContent = message || 'Periksa kembali data yang dimasukkan.';
-        showAjaxToast('error', errorBox.textContent);
+        showAjaxToast('error', message || 'Periksa kembali data yang dimasukkan.');
     };
 
     const updateGoalProgress = (form, data) => {
@@ -335,7 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
         form.dataset.ajaxSubmitting = 'true';
         let confirmedMessage = null;
-        form.querySelector('[data-ajax-errors]')?.remove();
         buttons.forEach((button) => {
             button.disabled = true;
             button.setAttribute('aria-busy', 'true');
@@ -364,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 if (response.status === 422) {
-                    showFormErrors(form, payload?.errors);
+                    showFormErrors(payload?.errors);
                 } else if (response.status === 419) {
                     showAjaxToast('error', 'Sesi keamanan berakhir. Muat ulang halaman lalu coba kembali.');
                 } else if (response.status >= 500) {
@@ -387,9 +377,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     category_id: payload.data.category_id,
                     due_date: payload.data.due_date,
                     status: payload.data.status,
-                    activity_date: payload.data.activity_date,
-                    start_time: payload.data.start_time,
-                    end_time: payload.data.end_time,
                     unit: payload.data.unit,
                     start_date: payload.data.start_date,
                     deadline: payload.data.deadline,
@@ -442,25 +429,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } else {
-                const result = form.nextElementSibling?.matches('[data-ajax-result]')
-                    ? form.nextElementSibling
-                    : document.createElement('div');
-                if (!result.dataset.ajaxResult) {
-                    result.dataset.ajaxResult = 'true';
-                    result.className = 'mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800';
-                    result.setAttribute('role', 'status');
-                    form.insertAdjacentElement('afterend', result);
-                }
-                result.replaceChildren(document.createTextNode(payload.message));
-                const savedName = payload.data?.title || payload.data?.name || payload.data?.judul;
-                if (savedName) result.append(document.createTextNode(` Tersimpan: ${savedName}.`));
-                if (payload.redirect_url) {
-                    const link = document.createElement('a');
-                    link.href = payload.redirect_url;
-                    link.className = 'ml-2 font-semibold underline';
-                    link.textContent = 'Lihat data';
-                    result.append(link);
-                }
                 updateGoalProgress(form, payload.data);
                 if (form.dataset.ajaxNoteFavorite && typeof payload.data?.favorit === 'boolean') {
                     const button = form.querySelector('[data-note-favorite-button]');

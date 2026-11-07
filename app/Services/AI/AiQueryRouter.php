@@ -15,6 +15,18 @@ class AiQueryRouter
 
         $compact = $this->normalizeAliases($compact);
 
+        if (preg_match('/\b(?:daily[\s-]*activit(?:y|ies)|activity logs?|aktivitas(?:\s+harian)?|catat aktivitas)\b/iu', $compact) === 1) {
+            return $this->result('retired_feature', [], 'retired-feature');
+        }
+
+        if (Str::contains($compact, ['apa saja fitur', 'fitur yang tersedia', 'fitur aktif', 'fitur tersedia'])) {
+            return $this->result('feature_list', [], 'active-feature-list');
+        }
+
+        if (Str::contains($compact, ['data yang bisa kamu akses', 'data yang dapat kamu akses', 'data apa yang bisa kamu akses'])) {
+            return $this->result('data_access', [], 'data-access');
+        }
+
         if (preg_match('/^(hai|halo|hi|hello)(?:[,.]?\s+(bro|gan|kak|teman|guys?|semuanya))?[!.?\s]*$/iu', $compact) === 1
             || preg_match('/^selamat (pagi|siang|sore|malam)(?:\s+(semuanya|kawan|teman))?[!.?\s]*$/iu', $compact) === 1
             || preg_match('/^(apa kabar|gimana kabar kamu)[!?.\s]*$/iu', $compact) === 1) {
@@ -34,18 +46,16 @@ class AiQueryRouter
             'hubungan kategori', 'catatan dalam kategori', 'catatan kategori',
             'kategori tanpa catatan', 'kategori belum memiliki catatan',
             'berapa catatan dalam kategori', 'jumlah catatan dalam kategori',
-            'task dalam kategori', 'tugas dalam kategori',
-            'aktivitas dalam kategori', 'jumlah seluruh workspace',
+            'task dalam kategori', 'tugas dalam kategori', 'jumlah seluruh workspace',
             'ringkas seluruh workspace', 'ringkasan workspace',
             'kondisi produktivitas saya', 'kondisi catatin saya',
-            'berapa aktivitas yang sudah saya catat', 'jumlah aktivitas saya',
             'berapa task yang belum selesai', 'berapa tugas yang belum selesai',
             'progres goal saya', 'bagaimana progres goal saya',
         ]);
         if ($explicitWorkspace) {
             $intents = ['workspace'];
             if (Str::contains($compact, [
-                'task dalam kategori', 'tugas dalam kategori', 'aktivitas dalam kategori',
+                'task dalam kategori', 'tugas dalam kategori',
             ])) {
                 $intents[] = 'productivity';
             }
@@ -79,11 +89,11 @@ class AiQueryRouter
 
         $explicitProductivity = Str::contains($compact, [
             'tugas saya', 'task saya', 'belum selesai',
-            'aktivitas saya', 'aktivitas minggu', 'minggu ini',
+            'minggu ini',
             'goal saya', 'goal gw', 'target saya', 'progres saya',
             'progres goal', 'progress saya', 'deadline', 'sisa target',
             'nama tugas', 'nama task', 'deskripsi tugas', 'deskripsi task',
-            'status tugas saya', 'status task saya', 'aktivitas terbaru saya', 'aktivitas terakhir saya',
+            'status tugas saya', 'status task saya',
         ]);
         if ($explicitProductivity) {
             return $this->result('productivity', ['productivity'], 'productivity');
@@ -98,7 +108,7 @@ class AiQueryRouter
             || preg_match('/^(jelaskan|jelaskan|rangkum|ringkas|buat soal|contoh)\b/iu', $compact) === 1
                 && ! Str::contains($compact, [
                     'catatan saya', 'catatan belajar', 'materi saya', 'lampiran saya',
-                    'tugas saya', 'aktivitas saya', 'goal saya', 'target saya',
+                    'tugas saya', 'goal saya', 'target saya',
                     'perulangan', 'algoritma', 'materi yang saya pelajari',
                 ]);
         if ($followUp) {
@@ -123,11 +133,12 @@ class AiQueryRouter
             'status tugas', 'status tugas ada apa', 'tugas ada apa',
             'cara membuat task', 'cara membuat tugas', 'cara membuat goal',
             'bagaimana cara buat task', 'bagaimana cara buat tugas',
-            'cara menggunakan goal', 'goal tracker', 'daily activity',
-            'aktivitas harian', 'catatan belajar', 'pengaturan',
+            'cara menggunakan goal', 'goal tracker', 'catatan belajar', 'pengaturan',
             'registrasi', 'daftar akun', 'login', 'masuk', 'logout',
             'catatin ai', 'bagaimana cara', 'cara menggunakan', 'validasi',
-            'aturan bisnis', 'fitur yang tidak tersedia', 'troubleshooting',
+            'aturan bisnis', 'fitur yang tidak tersedia', 'fitur tersedia',
+            'apa saja fitur', 'fitur catatin', 'data yang bisa kamu akses',
+            'data yang dapat kamu akses', 'troubleshooting',
             'gimana cara buat task', 'gimana cara buat tugas',
             'fitur dashboard buat apa', 'fungsi dashboard',
         ]);
@@ -187,7 +198,7 @@ class AiQueryRouter
         if (Str::contains($normalized, ['cara membuat task', 'cara membuat tugas', 'bagaimana cara'])) {
             return 'website';
         }
-        if (Str::contains($normalized, ['tugas', 'task', 'aktivitas', 'goal', 'target', 'deadline', 'progres'])) {
+        if (Str::contains($normalized, ['tugas', 'task', 'goal', 'target', 'deadline', 'progres'])) {
             return 'productivity';
         }
 

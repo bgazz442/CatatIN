@@ -32,8 +32,11 @@ class WebsiteKnowledgeTest extends TestCase
 
         $result = app(WebsiteKnowledgeRetriever::class)->synchronize(true);
 
-        $this->assertGreaterThanOrEqual(8, $result['synced']);
-        $this->assertGreaterThanOrEqual(8, AiWebsiteKnowledgeChunk::query()->distinct()->count('source_key'));
+        $this->assertGreaterThanOrEqual(7, $result['synced']);
+        $this->assertGreaterThanOrEqual(7, AiWebsiteKnowledgeChunk::query()->distinct()->count('source_key'));
+        $this->assertDatabaseMissing('ai_website_knowledge_chunks', [
+            'source_key' => 'website/daily-activities.md',
+        ]);
         $this->assertDatabaseMissing('ai_website_knowledge_chunks', ['visibility' => 'private']);
         $this->assertDatabaseHas('ai_website_knowledge_chunks', [
             'feature' => 'Task Manager',
@@ -66,7 +69,7 @@ class WebsiteKnowledgeTest extends TestCase
         $first = $retriever->synchronize(true);
         $second = $retriever->synchronize();
 
-        $this->assertGreaterThanOrEqual(8, $first['synced']);
+        $this->assertGreaterThanOrEqual(7, $first['synced']);
         $this->assertSame(0, $second['synced']);
     }
 
@@ -97,6 +100,65 @@ class WebsiteKnowledgeTest extends TestCase
         $this->assertNotEmpty($result['sources']);
         $this->assertSame('website_documentation', $result['sources'][0]['type']);
         $this->assertStringContainsString('Task Manager', $result['sources'][0]['title']);
+    }
+
+    public function test_retired_activity_knowledge_cache_is_not_retrieved_before_cleanup_migration(): void
+    {
+        $content = 'Daily Activities lets users record activity logs and daily activity summaries.';
+        AiWebsiteKnowledgeChunk::create([
+            'source_key' => 'website/daily-activities.md',
+            'feature' => 'Daily Activities',
+            'route' => '/aktivitas',
+            'visibility' => 'public',
+            'version' => '1.0',
+            'chunk_index' => 0,
+            'content' => $content,
+            'content_hash' => hash('sha256', $content),
+            'source_hash' => hash('sha256', 'retired-source'),
+            'metadata' => ['source_file' => 'website/daily-activities.md'],
+        ]);
+        Http::fake();
+
+        $result = app(WebsiteKnowledgeRetriever::class)->retrieve('Bagaimana cara menggunakan Daily Activities?');
+
+        $this->assertSame('', $result['context']);
+        $this->assertSame([], $result['sources']);
+        $this->assertDatabaseHas('ai_website_knowledge_chunks', [
+            'source_key' => 'website/daily-activities.md',
+        ]);
+        Http::assertNothingSent();
+    }
+
+    public function test_synced_ai_knowledge_lists_active_features_and_marks_daily_activities_unavailable(): void
+    {
+        Http::fake(function ($request) {
+            if (str_ends_with($request->url(), '/api/tags')) {
+                return Http::response(['models' => [
+                    ['name' => 'qwen3:1.7b'],
+                    ['name' => 'nomic-embed-text:latest'],
+                ]]);
+            }
+            if (str_ends_with($request->url(), '/api/embed')) {
+                return Http::response([
+                    'embeddings' => array_fill(0, count($request['input']), [1.0, 0.0]),
+                ]);
+            }
+
+            return Http::response(['response' => '', 'done' => true]);
+        });
+
+        $retriever = app(WebsiteKnowledgeRetriever::class);
+        $retriever->synchronize(true);
+        $content = AiWebsiteKnowledgeChunk::query()
+            ->where('source_key', 'website/catatin-ai.md')
+            ->orderBy('chunk_index')
+            ->pluck('content')
+            ->implode("\n");
+
+        foreach (['Dashboard', 'Task Manager', 'Goal Tracker', 'Catatan Belajar', 'CatatIn AI', 'Pengaturan Akun'] as $feature) {
+            $this->assertStringContainsString($feature, $content);
+        }
+        $this->assertStringContainsString('Daily Activities sudah tidak tersedia', $content);
     }
 
     public function test_fallback_keyword_retrieval_continues_when_embedding_fails(): void

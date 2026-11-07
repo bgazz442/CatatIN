@@ -43,10 +43,14 @@ class AiController extends Controller
                 ->limit(6)
                 ->get()
                 ->reverse()
+                ->reject(fn ($message) => $this->mentionsRetiredActivity($message->content))
                 ->map(fn ($message) => strtoupper($message->role).': '.Str::limit($message->content, 800))
                 ->implode("\n");
         }
         $summary = trim((string) ($conversation?->context_summary ?? ''));
+        if ($this->mentionsRetiredActivity($summary)) {
+            $summary = $history;
+        }
         $route = app(AiQueryRouter::class)->route($validated['message'], $history, $summary);
         $isFollowUp = ($route['primary_intent'] ?? '') === 'follow_up';
         $retrievalQuestion = trim($isFollowUp && $history !== ''
@@ -104,6 +108,7 @@ class AiController extends Controller
             ->limit(8)
             ->get()
             ->reverse()
+            ->reject(fn ($message) => $this->mentionsRetiredActivity($message->content))
             ->map(fn ($message) => strtoupper($message->role).': '.Str::limit($message->content, 1200))
             ->implode("\n");
         $fallbackAnswer = $this->fallbackAnswer($route, $context['context']);
@@ -198,7 +203,7 @@ class AiController extends Controller
                 'id' => $message->id,
                 'role' => $message->role,
                 'content' => $message->content,
-                'source_refs' => $message->source_refs ?? [],
+                'source_refs' => $this->filterRetiredActivitySources($message->source_refs ?? []),
                 'created_at' => $message->created_at?->toISOString(),
             ])->all(),
         ]);
@@ -235,6 +240,8 @@ class AiController extends Controller
     {
         return <<<PROMPT
 Kamu adalah CatatIn Assistant, asisten produktivitas pribadi yang menjawab berdasarkan data milik pengguna.
+Fitur aktif CatatIn hanya Dashboard, Task Manager, Goal Tracker, Catatan Belajar, CatatIn AI, dan Pengaturan Akun.
+Daily Activities sudah tidak tersedia. Jika ditanyakan, jelaskan bahwa fitur tersebut telah dihapus dan jangan memberi panduan lama, mengakses data lama, atau mengarang ringkasan aktivitas.
 Mode jawaban: {$mode}
 Ringkasan percakapan (hanya petunjuk dialog, bukan fakta terkini):
 {$summary}
@@ -293,7 +300,6 @@ PROMPT;
                     .$this->formatFactNumber($workspaceFacts['goal_progress']['current_total'])
                     .' dari '.$this->formatFactNumber($workspaceFacts['goal_progress']['target_total'])
                     .' (agregat nilai, bukan jumlah goal atau persentase).',
-                '- Aktivitas tercatat: '.$workspaceFacts['activities_count'].'.',
                 '- Kategori global/shared tersedia: '.$workspaceFacts['categories_count'].'.',
                 'Rincian terbaru dibatasi hingga 5 item per jenis; ringkasan ini tidak mengklaim daftar lengkap.',
             ]);
@@ -360,17 +366,6 @@ PROMPT;
             }
         }
 
-        if (Str::contains($normalized, ['aktivitas terbaru', 'aktivitas terakhir'])
-            && ! empty($productivityFacts['activities'])) {
-            $activity = $productivityFacts['activities'][0];
-            $time = $activity['start_time'] && $activity['end_time']
-                ? ' pukul '.$activity['start_time'].'–'.$activity['end_time']
-                : '';
-
-            return 'Aktivitas terbaru dalam 30 hari terakhir: "'.$activity['title'].'" pada '
-                .$activity['activity_date'].$time.'; kategori '.$activity['category'].'.';
-        }
-
         $goalFacts = $productivityFacts['goals'] ?? null;
         if (Str::contains($normalized, ['goal', 'target'])
             && preg_match('/\b(berapa|jumlah|banyak)\b/u', $normalized) === 1
@@ -388,7 +383,7 @@ PROMPT;
 
         if (Str::contains($normalized, ['progres', 'progress'])
             && Str::contains($normalized, ['goal', 'target'])
-            && ! Str::contains($normalized, ['tugas', 'task', 'aktivitas', 'catatan', 'workspace'])
+            && ! Str::contains($normalized, ['tugas', 'task', 'catatan', 'workspace'])
             && ! empty($goalFacts['items'])) {
             $matchedGoal = collect($goalFacts['items'])->first(function (array $goal) use ($normalized) {
                 return str_contains($normalized, mb_strtolower($goal['name']));
@@ -471,7 +466,18 @@ PROMPT;
         return match ($mode) {
             'greeting' => 'Halo! Ada yang bisa saya bantu terkait produktivitas atau materi belajar Anda?',
             'acknowledgment' => 'Sama-sama! Jika ada pertanyaan lain, saya siap membantu.',
-            'ambiguous' => 'Pertanyaan itu masih kurang spesifik. Maksud Anda ingin membahas tugas, aktivitas, target, catatan belajar, atau fitur website tertentu?',
+            'retired_feature' => 'Daily Activities sudah tidak tersedia di CatatIn. Fitur aktif yang tersedia adalah Dashboard, Task Manager, Goal Tracker, Catatan Belajar, CatatIn AI, dan Pengaturan Akun.',
+            'feature_list' => implode("\n", [
+                'Fitur aktif CatatIn:',
+                '- Dashboard: ringkasan tugas mendatang, deadline terlewat, dan target aktif.',
+                '- Task Manager: membuat, mengelola, dan memperbarui status serta deadline tugas.',
+                '- Goal Tracker: membuat target dan mencatat progresnya.',
+                '- Catatan Belajar: menyimpan dan mengelola catatan belajar beserta lampiran.',
+                '- CatatIn AI: menjawab pertanyaan berdasarkan dokumentasi website dan data akun yang diizinkan.',
+                '- Pengaturan Akun: mengatur tema tampilan akun.',
+            ]),
+            'data_access' => 'CatatIn AI dapat menggunakan catatan belajar dan lampirannya, tugas beserta status dan deadline, target beserta progres, ringkasan workspace, serta dokumentasi publik CatatIn. Data pribadi dibatasi pada akun yang sedang login; AI tidak mengakses data pengguna lain.',
+            'ambiguous' => 'Pertanyaan itu masih kurang spesifik. Maksud Anda ingin membahas tugas, target, catatan belajar, atau fitur website tertentu?',
             'unsupported' => 'Informasi atau prosedur tersebut belum tersedia dalam sumber CatatIn yang dapat saya akses. Jika pertanyaan Anda membahas fitur atau data tertentu, coba sebutkan nama fiturnya.',
             'website' => trim($context) === ''
                 ? 'Saya tidak menemukan dokumentasi CatatIn yang mendukung pertanyaan tersebut. Saya tidak ingin menebak fitur atau aturan yang belum tersedia.'
@@ -538,13 +544,12 @@ PROMPT;
             ->limit(6)
             ->get()
             ->reverse()
+            ->reject(fn ($message) => $this->mentionsRetiredActivity($message->content))
             ->map(fn ($message) => strtoupper($message->role).': '.Str::limit($message->content, 500))
             ->implode("\n");
 
         $summary = Str::limit(trim($messages), 2000, '...');
-        if ($summary !== '') {
-            $conversation->update(['context_summary' => $summary]);
-        }
+        $conversation->update(['context_summary' => $summary === '' ? null : $summary]);
     }
 
     private function deduplicateSources(array $sources): array
@@ -565,6 +570,28 @@ PROMPT;
         }
 
         return array_values($unique);
+    }
+
+    private function mentionsRetiredActivity(string $content): bool
+    {
+        return preg_match('/\b(?:daily[\s-]*activit(?:y|ies)|activity logs?|aktivitas(?:\s+harian)?|catat aktivitas)\b/iu', $content) === 1;
+    }
+
+    private function filterRetiredActivitySources(array $sources): array
+    {
+        return array_values(array_filter($sources, function ($source): bool {
+            if (! is_array($source)) {
+                return false;
+            }
+
+            if (in_array($source['type'] ?? null, ['aktivitas', 'activity', 'daily_activity', 'daily_activities'], true)) {
+                return false;
+            }
+
+            $path = parse_url((string) ($source['link'] ?? ''), PHP_URL_PATH);
+
+            return ! is_string($path) || preg_match('~(?:^|/)aktivitas(?:/|$)~u', $path) !== 1;
+        }));
     }
 
 }

@@ -28,7 +28,11 @@ class AuthController extends Controller
         $credentials = $validator->validated();
 
         if (! Auth::attempt(
-            ['email' => $credentials['email'], 'password' => $credentials['password']],
+            [
+                'email' => $credentials['email'],
+                'password' => $credentials['password'],
+                'is_active' => true,
+            ],
             $request->boolean('remember')
         )) {
             return redirect()->route('login')
@@ -38,6 +42,15 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         $request->session()->forget('auth_provider');
+
+        if ($request->user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        $intendedPath = parse_url((string) $request->session()->get('url.intended'), PHP_URL_PATH);
+        if (is_string($intendedPath) && ($intendedPath === '/admin' || str_starts_with($intendedPath, '/admin/'))) {
+            $request->session()->forget('url.intended');
+        }
 
         return redirect()->intended(route('dashboard'));
     }
@@ -79,6 +92,12 @@ class AuthController extends Controller
         }
 
         $validated = $validator->validated();
+
+        if (strtolower($validated['email']) === config('admin.email')) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Email ini tidak tersedia untuk registrasi.'])
+                ->withInput(array_merge($request->only(['name', 'remember']), ['_form' => 'register']));
+        }
 
         $user = User::create([
             'name' => $validated['name'],

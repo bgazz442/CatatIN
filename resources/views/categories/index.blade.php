@@ -21,11 +21,11 @@
             <div data-ajax-item class="flex flex-col gap-3 border-b border-slate-100 p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                     <h2 class="truncate text-sm font-semibold text-slate-900">{{ $category->name }}</h2>
-                    <p class="mt-1 text-xs text-slate-500">{{ $category->catatan_count }} catatan · {{ $category->tasks_count }} tugas · {{ $category->daily_activities_count }} aktivitas · {{ $category->media_favorites_count }} media</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ $category->catatan_count }} catatan · {{ $category->tasks_count }} tugas · {{ $category->media_favorites_count }} media</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <a href="{{ route('categories.edit', $category) }}" class="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Edit</a>
-                    @if($category->catatan_count === 0 && $category->media_favorites_count === 0 && $category->tasks_count === 0 && $category->daily_activities_count === 0)
+                    @if($category->catatan_count === 0 && $category->media_favorites_count === 0 && $category->tasks_count === 0)
                         <form method="POST" action="{{ route('categories.destroy', $category) }}" onsubmit="return confirm('Hapus kategori ini?')" data-ajax-form>
                             @csrf
                             @method('DELETE')

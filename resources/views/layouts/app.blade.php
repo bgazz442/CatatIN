@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="CatatIn - Aplikasi produktivitas personal untuk mengelola tugas, aktivitas harian, dan target pribadi.">
+    <meta name="description" content="CatatIn - Aplikasi produktivitas personal untuk mengelola tugas dan target pribadi.">
     <title>@yield('title', 'Dashboard') - CatatIn</title>
 
     <!-- Google Fonts: Inter & Poppins -->
@@ -81,11 +81,6 @@
                 <i data-lucide="list-checks" class="w-4 h-4 {{ request()->routeIs('tasks.*') ? 'text-[#2F6F64]' : 'text-slate-400' }}"></i>
                 <span>Task Manager</span>
             </a>
-            <a href="{{ auth()->check() ? route('activities.index') : route('login', ['login_required' => 1, 'redirect_to' => '/aktivitas']) }}"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all {{ request()->routeIs('activities.*') ? 'bg-[#2F6F64]/10 text-[#2F6F64] font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                <i data-lucide="clock-3" class="w-4 h-4 {{ request()->routeIs('activities.*') ? 'text-[#2F6F64]' : 'text-slate-400' }}"></i>
-                <span>Daily Activity</span>
-            </a>
             <a href="{{ auth()->check() ? route('goals.index') : route('login', ['login_required' => 1, 'redirect_to' => '/target']) }}"
                class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all {{ request()->routeIs('goals.*') ? 'bg-[#2F6F64]/10 text-[#2F6F64] font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                 <i data-lucide="target" class="w-4 h-4 {{ request()->routeIs('goals.*') ? 'text-[#2F6F64]' : 'text-slate-400' }}"></i>
@@ -113,7 +108,7 @@
                     <span class="text-xs font-semibold">CatatIn Personal</span>
                 </div>
                 <p class="text-xs text-slate-600 italic">"Atur langkah, capai tujuan."</p>
-                <p class="text-[10px] text-slate-400 mt-1">Tugas, aktivitas, target, dan assistant</p>
+                <p class="text-[10px] text-slate-400 mt-1">Tugas, target, dan assistant</p>
             </div>
             @guest
                 <a href="{{ route('login') }}" class="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-[#2F6F64] text-white text-sm font-semibold rounded-lg hover:bg-[#24574F] transition">
@@ -212,7 +207,7 @@
                     </div>
                     <div>
                         <p class="text-sm font-bold text-slate-800">Catat<span class="theme-footer-accent">In</span></p>
-                        <p class="mt-1 text-xs text-slate-500">Produktivitas personal untuk tugas, aktivitas, dan target</p>
+                        <p class="mt-1 text-xs text-slate-500">Produktivitas personal untuk tugas dan target</p>
                     </div>
                 </div>
                 <p class="theme-footer-copy rounded-full px-4 py-2 text-xs font-semibold">&copy; {{ now()->year }} CatatIn</p>

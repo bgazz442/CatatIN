@@ -21,6 +21,7 @@ class WebsiteKnowledgeRetriever
 
         $chunks = AiWebsiteKnowledgeChunk::query()
             ->where('visibility', 'public')
+            ->where('source_key', '!=', 'website/daily-activities.md')
             ->get();
 
         if ($chunks->isEmpty()) {
@@ -188,7 +189,7 @@ class WebsiteKnowledgeRetriever
             // Explicit website/help questions take precedence over personal-data wording.
         } else {
             $personalDataPatterns = [
-                'tugas saya', 'aktivitas saya', 'target saya', 'catatan saya',
+                'tugas saya', 'target saya', 'catatan saya',
                 'data saya', 'milik saya', 'belum selesai saya',
                 'rangkum catatan', 'buat soal dari', 'latihan dari',
             ];
@@ -200,11 +201,12 @@ class WebsiteKnowledgeRetriever
         }
 
         $websiteTerms = [
-            'dashboard', 'task', 'tugas', 'daily', 'aktivitas', 'goal', 'target',
+            'dashboard', 'task', 'tugas', 'goal', 'target',
             'catatan belajar', 'catatan', 'pengaturan',
             'catatin ai', 'assistant', 'registrasi', 'register', 'login', 'masuk',
             'daftar', 'menu', 'cara', 'validasi',
-            'aturan', 'troubleshooting', 'error', 'halaman', 'fitur tidak tersedia',
+            'aturan', 'troubleshooting', 'error', 'halaman', 'fitur', 'website',
+            'data yang bisa kamu akses', 'data yang dapat kamu akses',
         ];
 
         foreach ($websiteTerms as $term) {

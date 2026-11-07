@@ -27,8 +27,4 @@ class Category extends Model
         return $this->hasMany(Task::class, 'category_id');
     }
 
-    public function dailyActivities(): HasMany
-    {
-        return $this->hasMany(DailyActivity::class, 'category_id');
-    }
 }

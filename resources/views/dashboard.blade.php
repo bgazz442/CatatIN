@@ -2,7 +2,7 @@
 
 @section('title', 'Dashboard Produktivitas')
 @section('page-title', 'Dashboard Produktivitas')
-@section('page-subtitle', 'Ringkasan tugas, aktivitas, dan target pribadi Anda.')
+@section('page-subtitle', 'Ringkasan tugas dan target pribadi Anda.')
 
 @section('content')
 <div class="space-y-6">
@@ -12,11 +12,10 @@
                 <i data-lucide="sparkles" class="h-3.5 w-3.5 text-amber-300"></i><span>Ruang Produktivitas Pribadi</span>
             </div>
             <h2 class="mb-2 text-2xl font-extrabold tracking-tight md:text-3xl">Rencanakan, lakukan, capai.</h2>
-            <p class="mb-6 text-sm leading-relaxed text-white/85 md:text-base">Kelola tugas, catat aktivitas, pantau target, dan gunakan asisten pribadi Anda.</p>
+            <p class="mb-6 text-sm leading-relaxed text-white/85 md:text-base">Kelola tugas, pantau target, dan gunakan asisten pribadi Anda.</p>
             <div class="flex flex-wrap gap-3">
                 @auth
                     <a href="{{ route('tasks.create') }}" class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#2F6F64] shadow-md hover:bg-slate-50"><i data-lucide="plus" class="h-4 w-4"></i><span>Tambah Tugas</span></a>
-                    <a href="{{ route('activities.create') }}" class="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/20"><i data-lucide="clock-3" class="h-4 w-4"></i><span>Catat Aktivitas</span></a>
                 @else
                     <a href="{{ route('login', ['login_required' => 1, 'redirect_to' => '/tugas']) }}" class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#2F6F64] shadow-md hover:bg-slate-50"><i data-lucide="log-in" class="h-4 w-4"></i><span>Masuk untuk mulai</span></a>
                 @endauth
@@ -25,13 +24,12 @@
         <div class="pointer-events-none absolute right-12 top-6 hidden opacity-15 lg:block"><i data-lucide="layout-dashboard" class="h-48 w-48"></i></div>
     </section>
 
-    <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+    <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         @foreach([
             ['Total Tugas', $taskCounts->sum(), 'list-checks', 'text-slate-800'],
             ['Pending', $taskCounts->get('pending', 0), 'circle-dashed', 'text-slate-700'],
             ['Dikerjakan', $taskCounts->get('in_progress', 0), 'loader-circle', 'text-amber-700'],
             ['Tuntas', $taskCounts->get('completed', 0), 'circle-check', 'text-emerald-700'],
-            ['Aktivitas Hari Ini', $todayActivityCount, 'clock-3', 'text-sky-700'],
             ['Target Aktif', $activeGoalCount, 'target', 'text-violet-700'],
         ] as [$label, $value, $icon, $color])
             <div class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-soft">
@@ -61,15 +59,6 @@
         </section>
 
         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3"><div><h2 class="font-bold text-slate-900">Aktivitas Hari Ini</h2><p class="text-xs text-slate-500">Total durasi: {{ intdiv($todayActivityMinutes, 60) }} jam {{ $todayActivityMinutes % 60 }} menit</p></div>@auth<a href="{{ route('activities.index', ['date' => today()->toDateString()]) }}" class="text-xs font-semibold text-[#2F6F64]">Riwayat</a>@endauth</div>
-            <div class="divide-y divide-slate-100">
-                @forelse($todayActivities as $activity)
-                    <div class="flex items-center justify-between gap-3 py-3"><div class="min-w-0"><p class="truncate text-sm font-semibold text-slate-800">{{ $activity->title }}</p><p class="text-xs text-slate-500">{{ $activity->category?->name ?? 'Tanpa kategori' }}</p></div><span class="shrink-0 text-xs text-slate-600">{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '—' }} · {{ $activity->durationMinutes() !== null ? intdiv($activity->durationMinutes(), 60).'j '.($activity->durationMinutes() % 60).'m' : '—' }}</span></div>
-                @empty<p class="py-6 text-sm text-slate-500">Belum ada aktivitas yang dicatat hari ini.</p>@endforelse
-            </div>
-        </section>
-
-        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3"><div><h2 class="font-bold text-slate-900">Target Aktif</h2><p class="text-xs text-slate-500">Ringkasan progres target pribadi</p></div>@auth<a href="{{ route('goals.index') }}" class="text-xs font-semibold text-[#2F6F64]">Semua target</a>@endauth</div>
             <div class="space-y-4 pt-3">
                 @forelse($activeGoals as $goal)
@@ -83,7 +72,7 @@
         <section class="flex flex-col gap-4 rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-white p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><i data-lucide="sparkles" class="h-5 w-5"></i></span>
-                <div><h2 class="font-bold text-slate-900">CatatIn Assistant</h2><p class="mt-1 text-sm text-slate-600">Tanyakan prioritas tugas, aktivitas, target, atau materi yang pernah Anda catat.</p></div>
+                <div><h2 class="font-bold text-slate-900">CatatIn Assistant</h2><p class="mt-1 text-sm text-slate-600">Tanyakan prioritas tugas, target, atau materi yang pernah Anda catat.</p></div>
             </div>
             <a href="{{ route('ai.index') }}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700"><span>Buka Assistant</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></a>
         </section>

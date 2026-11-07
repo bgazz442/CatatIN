@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\AiController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CatatanAttachmentController;
 use App\Http\Controllers\CatatanController;
-use App\Http\Controllers\DailyActivityController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\LearningCategoryController;
 use App\Http\Controllers\MediaFavoriteController;
@@ -34,7 +36,7 @@ Route::get('/login', function (Request $request) {
 
     return view('auth.login', ['showLoginRequiredModal' => $request->boolean('login_required')]);
 })->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login.store');
 Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings');
@@ -43,8 +45,18 @@ Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings'
 Route::get('/', [CatatanController::class, 'dashboard'])->name('dashboard');
 Route::get('/dashboard', [CatatanController::class, 'dashboard']);
 
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
+    Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    Route::get('/settings', [AdminSettingsController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
+});
+
 // --- CATATIN AI ---
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'user'])->group(function () {
     Route::post('/pengaturan/tampilan', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
 
     Route::get('/ai', [AiController::class, 'index'])->name('ai.index');
@@ -53,7 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/ai/conversations/{conversation}', [AiController::class, 'destroy'])->name('ai.conversation.destroy');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'user'])->group(function () {
     // --- Halaman Favorit ---
     Route::get('/catatan/favorit', [CatatanController::class, 'favorit'])->name('catatan.favorit');
     Route::get('/favorit', fn () => redirect()->route('catatan.favorit'));
@@ -70,7 +82,7 @@ Route::middleware('auth')->group(function () {
     // --- Toggle Status Favorit ---
     Route::patch('/catatan/{id}/favorit', [CatatanController::class, 'toggleFavorit'])->name('catatan.toggle-favorit');
 });
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'user'])->group(function () {
     Route::get('/tugas', [TaskController::class, 'index'])->name('tasks.index');
     Route::get('/tugas/tambah', [TaskController::class, 'create'])->name('tasks.create');
     Route::post('/tugas', [TaskController::class, 'store'])->name('tasks.store');
@@ -78,14 +90,6 @@ Route::middleware('auth')->group(function () {
     Route::put('/tugas/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::patch('/tugas/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status.update');
     Route::delete('/tugas/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
-
-    Route::get('/aktivitas', [DailyActivityController::class, 'index'])->name('activities.index');
-    Route::get('/aktivitas/tambah', [DailyActivityController::class, 'create'])->name('activities.create');
-    Route::post('/aktivitas', [DailyActivityController::class, 'store'])->name('activities.store');
-    Route::get('/aktivitas/{activity}', [DailyActivityController::class, 'show'])->name('activities.show');
-    Route::get('/aktivitas/{activity}/edit', [DailyActivityController::class, 'edit'])->name('activities.edit');
-    Route::put('/aktivitas/{activity}', [DailyActivityController::class, 'update'])->name('activities.update');
-    Route::delete('/aktivitas/{activity}', [DailyActivityController::class, 'destroy'])->name('activities.destroy');
 
     Route::get('/target', [GoalController::class, 'index'])->name('goals.index');
     Route::get('/target/buat', [GoalController::class, 'create'])->name('goals.create');

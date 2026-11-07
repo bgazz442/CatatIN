@@ -4,10 +4,11 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use LogicException;
 
 class User extends Authenticatable
 {
@@ -46,7 +47,29 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (User $user): void {
+            $removingActiveAdmin = $user->getOriginal('role') === 'admin'
+                && ($user->isDirty('is_active') && ! $user->is_active
+                    || $user->isDirty('role') && $user->role !== 'admin');
+
+            if ($removingActiveAdmin && $user->getOriginal('is_active')
+                && static::query()->where('role', 'admin')->where('is_active', true)->count() <= 1) {
+                throw new LogicException('Admin aktif terakhir tidak dapat dinonaktifkan atau diturunkan rolenya.');
+            }
+        });
+
+        static::deleting(function (User $user): void {
+            if ($user->role === 'admin'
+                && static::query()->where('role', 'admin')->count() <= 1) {
+                throw new LogicException('Akun Admin terakhir tidak dapat dihapus.');
+            }
+        });
     }
 
     public function tasks(): HasMany
@@ -54,14 +77,14 @@ class User extends Authenticatable
         return $this->hasMany(Task::class);
     }
 
-    public function dailyActivities(): HasMany
-    {
-        return $this->hasMany(DailyActivity::class);
-    }
-
     public function goals(): HasMany
     {
         return $this->hasMany(Goal::class);
+    }
+
+    public function catatan(): HasMany
+    {
+        return $this->hasMany(Catatan::class);
     }
 
     public function themePreference(): HasOne

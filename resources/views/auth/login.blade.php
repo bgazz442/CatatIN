@@ -126,6 +126,8 @@
         .form-label { margin-bottom: 6px; color: #344742; font-size: 12px; font-weight: 650; }
         .form-control { min-height: 44px; border-color: #dce5e0; border-radius: 8px; font-size: 14px; }
         .form-control:focus { border-color: #6b9b8e; box-shadow: 0 0 0 .2rem rgba(57,118,107,.13); }
+        .password-toggle { min-width: 46px; border-color: #dce5e0; color: #64746e; background: #fff; }
+        .password-toggle:hover, .password-toggle:focus { border-color: #6b9b8e; color: var(--pine); background: #f7faf8; }
         .form-check-input:checked { border-color: var(--teal); background-color: var(--teal); }
         .form-check-label { color: #64746e; font-size: 12px; }
         .submit-button { min-height: 46px; border: 0; border-radius: 8px; color: #fff; background: var(--pine); font-size: 14px; font-weight: 650; }
@@ -202,7 +204,7 @@
 
             <div class="tab-content">
                 <div class="tab-pane fade {{ $showRegister ? '' : 'show active' }}" id="login-pane" role="tabpanel" aria-labelledby="login-tab" tabindex="0">
-                    <form method="POST" action="{{ route('login.store') }}" autocomplete="on">
+                    <form method="POST" action="{{ route('login.store') }}" autocomplete="off">
                         @csrf
                         <input type="hidden" name="_form" value="login">
                         <div class="mb-3">
@@ -214,7 +216,12 @@
                         </div>
                         <div class="mb-3">
                             <label for="login-password" class="form-label">Password</label>
-                            <input id="login-password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="current-password" required>
+                            <div class="input-group">
+                                <input id="login-password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="current-password" required>
+                                <button class="btn password-toggle" type="button" data-password-toggle="login-password" aria-label="Tampilkan password" aria-pressed="false">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                             @if(old('_form') === 'login')
                                 @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             @endif
@@ -250,14 +257,24 @@
                         <div class="row">
                             <div class="col-sm-6 mb-3">
                                 <label for="register-password" class="form-label">Password</label>
-                                <input id="register-password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password" required>
+                                <div class="input-group">
+                                    <input id="register-password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password" required>
+                                    <button class="btn password-toggle" type="button" data-password-toggle="register-password" aria-label="Tampilkan password" aria-pressed="false">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                                 @if(old('_form') === 'register')
                                     @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 @endif
                             </div>
                             <div class="col-sm-6 mb-3">
                                 <label for="register-password-confirmation" class="form-label">Ulangi password</label>
-                                <input id="register-password-confirmation" type="password" name="password_confirmation" class="form-control" autocomplete="new-password" required>
+                                <div class="input-group">
+                                    <input id="register-password-confirmation" type="password" name="password_confirmation" class="form-control" autocomplete="new-password" required>
+                                    <button class="btn password-toggle" type="button" data-password-toggle="register-password-confirmation" aria-label="Tampilkan password" aria-pressed="false">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div id="password-requirements" class="mb-3 small" aria-live="polite">
@@ -284,6 +301,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (() => {
+            document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const input = document.getElementById(button.dataset.passwordToggle);
+                    if (!input) return;
+
+                    const visible = input.type === 'password';
+                    input.type = visible ? 'text' : 'password';
+                    button.setAttribute('aria-pressed', String(visible));
+                    button.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
+                    button.querySelector('i')?.classList.toggle('bi-eye', !visible);
+                    button.querySelector('i')?.classList.toggle('bi-eye-slash', visible);
+                    input.focus();
+                });
+            });
+
             const password = document.getElementById('register-password');
             const confirmation = document.getElementById('register-password-confirmation');
             const requirements = document.getElementById('password-requirements');

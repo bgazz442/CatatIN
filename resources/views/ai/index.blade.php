@@ -2,7 +2,7 @@
 
 @section('title', 'CatatIn Assistant')
 @section('page-title', 'CatatIn Assistant')
-@section('page-subtitle', 'Asisten pribadi untuk catatan, tugas, aktivitas, dan target Anda.')
+@section('page-subtitle', 'Asisten pribadi untuk catatan, tugas, dan target Anda.')
 
 @section('content')
 <div class="chat-page">
@@ -116,7 +116,7 @@
                         <i data-lucide="sparkles" class="h-6 w-6"></i>
                     </div>
                     <h2>Selamat datang di CatatIn Assistant</h2>
-                    <p>Asisten AI pribadi yang siap membantu kamu memahami catatan, mengelola aktivitas, dan menjawab berbagai pertanyaan.</p>
+                    <p>Asisten AI pribadi yang siap membantu kamu memahami catatan, mengelola tugas dan target, serta menjawab berbagai pertanyaan.</p>
                     <div class="chat-prompt-grid">
                         <button type="button" class="quick-prompt" data-prompt="Bantu saya memahami materi pemrograman.">
                             <span>Bantu saya memahami materi pemrograman.</span>
@@ -126,8 +126,8 @@
                             <span>Apa saja catatan belajar saya?</span>
                             <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
                         </button>
-                        <button type="button" class="quick-prompt" data-prompt="Bantu saya membuat rencana kegiatan berdasarkan tugas dan target saya.">
-                            <span>Bantu saya membuat rencana kegiatan.</span>
+                        <button type="button" class="quick-prompt" data-prompt="Bantu saya menyusun prioritas berdasarkan tugas dan target saya.">
+                            <span>Bantu saya menyusun prioritas tugas.</span>
                             <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
                         </button>
                         <button type="button" class="quick-prompt" data-prompt="Jelaskan konsep database dengan sederhana.">
@@ -299,11 +299,11 @@
             <div class="chat-welcome">
                 <div class="chat-welcome-mark"><i data-lucide="sparkles" class="h-6 w-6"></i></div>
                 <h2>Selamat datang di CatatIn Assistant</h2>
-                <p>Asisten AI pribadi yang siap membantu kamu memahami catatan, mengelola aktivitas, dan menjawab berbagai pertanyaan.</p>
+                <p>Asisten AI pribadi yang siap membantu kamu memahami catatan, mengelola tugas dan target, serta menjawab berbagai pertanyaan.</p>
                 <div class="chat-prompt-grid">
                     <button type="button" class="quick-prompt" data-prompt="Bantu saya memahami materi pemrograman."><span>Bantu saya memahami materi pemrograman.</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
                     <button type="button" class="quick-prompt" data-prompt="Apa saja catatan belajar saya?"><span>Apa saja catatan belajar saya?</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
-                    <button type="button" class="quick-prompt" data-prompt="Bantu saya membuat rencana kegiatan berdasarkan tugas dan target saya."><span>Bantu saya membuat rencana kegiatan.</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
+                    <button type="button" class="quick-prompt" data-prompt="Bantu saya menyusun prioritas berdasarkan tugas dan target saya."><span>Bantu saya menyusun prioritas tugas.</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
                     <button type="button" class="quick-prompt" data-prompt="Jelaskan konsep database dengan sederhana."><span>Jelaskan konsep database dengan sederhana.</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
                 </div>
             </div>`;

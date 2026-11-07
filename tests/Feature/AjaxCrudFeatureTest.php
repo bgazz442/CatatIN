@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Catatan;
 use App\Models\Category;
-use App\Models\DailyActivity;
 use App\Models\Goal;
 use App\Models\GoalProgressEntry;
 use App\Models\Task;
@@ -101,55 +100,6 @@ class AjaxCrudFeatureTest extends TestCase
             ->assertJsonPath('data.progress_entry.note', 'First half');
         $this->assertSame('5.50', $goal->fresh()->current_value);
         $this->assertSame(1, GoalProgressEntry::query()->where('goal_id', $goal->id)->count());
-    }
-
-    public function test_activity_ajax_create_update_and_delete_preserve_owner_scope(): void
-    {
-        $user = User::factory()->create();
-        $otherUser = User::factory()->create();
-        $category = Category::query()->firstOrCreate(['name' => 'AJAX Activity']);
-        $this->actingAs($user);
-
-        $created = $this->withHeaders($this->ajaxHeaders())->post(route('activities.store'), [
-            'title' => 'AJAX study activity',
-            'description' => 'Old detail',
-            'activity_date' => today()->toDateString(),
-            'category_id' => $category->id,
-            'start_time' => '09:00',
-            'end_time' => '10:00',
-        ])->assertCreated()
-            ->assertJsonPath('data.title', 'AJAX study activity')
-            ->assertJsonPath('data.start_time', '09:00')
-            ->assertJsonPath('data.category_id', $category->id);
-        $activity = DailyActivity::query()->findOrFail($created->json('data.id'));
-
-        $this->withHeaders($this->ajaxHeaders())->put(route('activities.update', $activity), [
-            'title' => 'Updated AJAX activity',
-            'description' => 'New detail',
-            'activity_date' => today()->toDateString(),
-            'category_id' => $category->id,
-            'start_time' => '10:00',
-            'end_time' => '11:00',
-        ])->assertOk()
-            ->assertJsonPath('data.title', 'Updated AJAX activity');
-        $this->assertSame('New detail', $activity->fresh()->description);
-
-        $foreign = DailyActivity::create([
-            'user_id' => $otherUser->id,
-            'title' => 'Foreign activity',
-            'activity_date' => today(),
-        ]);
-        $this->withHeaders($this->ajaxHeaders())->put(route('activities.update', $foreign), [
-            'title' => 'Changed by foreign owner',
-            'activity_date' => today()->toDateString(),
-            'category_id' => $category->id,
-        ])->assertNotFound();
-        $this->assertSame('Foreign activity', $foreign->fresh()->title);
-
-        $this->withHeaders($this->ajaxHeaders())->delete(route('activities.destroy', $activity))
-            ->assertOk()
-            ->assertJsonPath('data.id', $activity->id);
-        $this->assertDatabaseMissing('daily_activities', ['id' => $activity->id]);
     }
 
     public function test_note_ajax_create_update_and_delete_return_saved_note_data(): void
@@ -348,7 +298,7 @@ class AjaxCrudFeatureTest extends TestCase
         $routeMiddleware = app('router')->getRoutes()->getByName('tasks.store')->gatherMiddleware();
         $this->assertContains('web', $routeMiddleware);
         $this->assertContains('auth', $routeMiddleware);
-        foreach (['goals.store', 'activities.store', 'catatan.store', 'categories.store'] as $routeName) {
+        foreach (['goals.store', 'catatan.store', 'categories.store'] as $routeName) {
             $middleware = app('router')->getRoutes()->getByName($routeName)->gatherMiddleware();
             $this->assertContains('web', $middleware);
             $this->assertContains('auth', $middleware);
@@ -368,6 +318,9 @@ class AjaxCrudFeatureTest extends TestCase
         $this->assertStringContainsString('new FormData(form)', $script);
         $this->assertStringContainsString("'X-CSRF-TOKEN': token", $script);
         $this->assertStringContainsString("showAjaxToast('success', payload.message)", $script);
+        $this->assertStringContainsString("showAjaxToast('error', message || 'Periksa kembali data yang dimasukkan.')", $script);
+        $this->assertStringNotContainsString('data-ajax-result', $script);
+        $this->assertStringNotContainsString('Tersimpan:', $script);
         $this->assertStringContainsString('.find((toast) => toast.dataset.toastType === type && toast.dataset.toastMessage === message)', $script);
         $this->assertStringNotContainsString('window.location.reload', $script);
         $this->assertStringNotContainsString('window.location.href', $script);

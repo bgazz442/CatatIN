@@ -49,11 +49,13 @@ class LearningCategoryTest extends TestCase
     public function test_category_names_are_case_insensitive_unique(): void
     {
         $this->actingAs(User::factory()->create());
+        $categoryCount = Category::query()->count();
 
         $response = $this->post(route('categories.store'), ['name' => 'MATEMATIKA']);
 
         $response->assertSessionHasErrors('name');
-        $this->assertDatabaseCount('categories', 7);
+        $this->assertSame($categoryCount, Category::query()->count());
+        $this->assertSame(1, Category::query()->whereRaw('LOWER(name) = ?', ['matematika'])->count());
     }
 
     public function test_category_in_use_cannot_be_deleted(): void

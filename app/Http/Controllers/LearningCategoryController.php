@@ -15,7 +15,7 @@ class LearningCategoryController extends Controller
     public function index(): View
     {
         return view('categories.index', [
-            'categories' => Category::withCount(['catatan', 'mediaFavorites', 'tasks', 'dailyActivities'])->orderBy('name')->get(),
+            'categories' => Category::withCount(['catatan', 'mediaFavorites', 'tasks'])->orderBy('name')->get(),
         ]);
     }
 
@@ -69,8 +69,7 @@ class LearningCategoryController extends Controller
     {
         if ($category->catatan()->exists()
             || $category->mediaFavorites()->exists()
-            || $category->tasks()->exists()
-            || $category->dailyActivities()->exists()) {
+            || $category->tasks()->exists()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Kategori masih digunakan. Pindahkan data terkait ke kategori lain sebelum menghapusnya.',

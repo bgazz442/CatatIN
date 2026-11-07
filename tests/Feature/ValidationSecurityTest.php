@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\DailyActivity;
 use App\Models\Goal;
 use App\Models\Task;
 use App\Models\User;
@@ -42,29 +41,9 @@ class ValidationSecurityTest extends TestCase
         ])->assertSessionHasErrors('title');
     }
 
-    public function test_activity_and_goal_titles_reject_symbols_and_accept_spaced_alphanumeric_names(): void
+    public function test_goal_titles_reject_symbols_and_accept_spaced_alphanumeric_names(): void
     {
         $user = User::factory()->create();
-        $category = \App\Models\Category::query()->firstOrCreate(['name' => 'Akademik']);
-
-        foreach ([
-            ['route' => route('activities.store'), 'field' => 'title', 'data' => [
-                'title' => '123456', 'activity_date' => '2026-11-02', 'category_id' => $category->id,
-            ]],
-            ['route' => route('activities.store'), 'field' => 'title', 'data' => [
-                'title' => 'Belajar Database!', 'activity_date' => '2026-11-02', 'category_id' => $category->id,
-            ]],
-        ] as $case) {
-            $this->actingAs($user)->from(route('activities.create'))->post($case['route'], $case['data'])
-                ->assertSessionHasErrors($case['field']);
-        }
-
-        $this->actingAs($user)->post(route('activities.store'), [
-            'title' => 'Latihan Database 01',
-            'activity_date' => '2026-11-02',
-            'category_id' => $category->id,
-        ])->assertRedirect();
-        $this->assertDatabaseHas('daily_activities', ['title' => 'Latihan Database 01', 'user_id' => $user->id]);
 
         foreach (['123456', '!!!@@@', 'Target #1'] as $invalid) {
             $this->actingAs($user)->from(route('goals.create'))->post(route('goals.store'), [
@@ -82,50 +61,6 @@ class ValidationSecurityTest extends TestCase
             'start_date' => '2026-11-02',
         ])->assertRedirect();
         $this->assertDatabaseHas('goals', ['name' => 'Belajar Laravel', 'user_id' => $user->id]);
-    }
-
-    public function test_activity_update_rejects_invalid_title(): void
-    {
-        $user = User::factory()->create();
-        $category = \App\Models\Category::query()->firstOrCreate(['name' => 'Akademik']);
-        $activity = DailyActivity::create([
-            'user_id' => $user->id,
-            'title' => 'Belajar Database',
-            'activity_date' => '2026-11-02',
-            'category_id' => $category->id,
-        ]);
-
-        $this->actingAs($user)->from(route('activities.edit', $activity))->put(route('activities.update', $activity), [
-            'title' => 'Belajar Database!',
-            'activity_date' => '2026-11-02',
-            'category_id' => $category->id,
-        ])->assertSessionHasErrors('title');
-    }
-
-    public function test_activity_accepts_full_24_hour_time_values_and_displays_selected_day(): void
-    {
-        $user = User::factory()->create();
-        $category = \App\Models\Category::query()->firstOrCreate(['name' => 'Akademik']);
-
-        $this->actingAs($user)->post(route('activities.store'), [
-            'title' => 'Belajar Database 01',
-            'activity_date' => '2026-11-02',
-            'category_id' => $category->id,
-            'start_time' => '00:05',
-            'end_time' => '23:59',
-        ])->assertRedirect();
-
-        $this->assertDatabaseHas('daily_activities', [
-            'user_id' => $user->id,
-            'title' => 'Belajar Database 01',
-            'start_time' => '00:05:00',
-            'end_time' => '23:59:00',
-        ]);
-
-        $this->actingAs($user)->get(route('activities.index', [
-            'date' => '2026-11-02',
-            'month' => '2026-11',
-        ]))->assertOk();
     }
 
     public function test_goal_update_rejects_invalid_name(): void

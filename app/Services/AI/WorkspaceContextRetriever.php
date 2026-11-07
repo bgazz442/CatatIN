@@ -4,7 +4,6 @@ namespace App\Services\AI;
 
 use App\Models\Catatan;
 use App\Models\Category;
-use App\Models\DailyActivity;
 use App\Models\Goal;
 use App\Models\Task;
 
@@ -27,14 +26,11 @@ class WorkspaceContextRetriever
             ->where('user_id', $userId)
             ->selectRaw('COALESCE(SUM(current_value), 0) as current_total, COALESCE(SUM(target_value), 0) as target_total')
             ->first();
-        $activitiesCount = DailyActivity::query()->where('user_id', $userId)->count();
-
         $categoriesTotal = Category::query()->count();
         $categories = Category::query()
             ->withCount([
                 'catatan as user_notes_count' => fn ($query) => $query->where('user_id', $userId),
                 'tasks as user_tasks_count' => fn ($query) => $query->where('user_id', $userId),
-                'dailyActivities as user_activities_count' => fn ($query) => $query->where('user_id', $userId),
             ])
             ->orderByDesc('user_notes_count')
             ->orderBy('name')
@@ -60,7 +56,6 @@ class WorkspaceContextRetriever
             '- Jumlah goal: '.$goalsCount.'; total progres tersimpan '
                 .$goalProgressFacts['current_total'].' dari '.$goalProgressFacts['target_total']
                 .' (agregat nilai progres, bukan jumlah goal atau persentase).',
-            '- Aktivitas tercatat: '.$activitiesCount.'.',
             'Kategori yang tersedia bersifat global/shared, bukan kategori milik satu pengguna. Jumlah kategori: '.$categoriesTotal.'.',
         ];
 
@@ -68,12 +63,11 @@ class WorkspaceContextRetriever
             $lines[] = 'Daftar kategori berikut dibatasi pada '.self::CATEGORY_LIMIT.' kategori dengan jumlah catatan pengguna tertinggi.';
         }
 
-        $lines[] = 'Kategori dan jumlah data pada akun ini (catatan / tugas / aktivitas):';
+        $lines[] = 'Kategori dan jumlah data pada akun ini (catatan / tugas):';
         foreach ($categories as $category) {
             $lines[] = '- '.$category->name.': '
                 .$category->user_notes_count.' catatan / '
-                .$category->user_tasks_count.' tugas / '
-                .$category->user_activities_count.' aktivitas.';
+                .$category->user_tasks_count.' tugas.';
         }
 
         $sources = [[
@@ -142,27 +136,6 @@ class WorkspaceContextRetriever
             $lines[] = '- Tidak ada goal.';
         }
 
-        $recentActivities = DailyActivity::query()
-            ->where('user_id', $userId)
-            ->with('category')
-            ->orderByDesc('activity_date')
-            ->orderByDesc('created_at')
-            ->limit(self::SAMPLE_LIMIT)
-            ->get();
-        $lines[] = 'Contoh aktivitas terbaru (maksimum '.self::SAMPLE_LIMIT.'; bukan daftar lengkap jika jumlah aktivitas lebih besar):';
-        foreach ($recentActivities as $activity) {
-            $lines[] = '- '.$activity->activity_date->format('Y-m-d').' | '.$activity->title
-                .' | kategori: '.($activity->category?->name ?? 'tanpa kategori').'.';
-            $sources[] = [
-                'type' => 'aktivitas',
-                'title' => 'Aktivitas: '.$activity->title.' ('.$activity->activity_date->format('d M Y').')',
-                'link' => route('activities.edit', $activity),
-            ];
-        }
-        if ($recentActivities->isEmpty()) {
-            $lines[] = '- Tidak ada aktivitas.';
-        }
-
         return [
             'context' => implode("\n", $lines),
             'sources' => $sources,
@@ -172,13 +145,11 @@ class WorkspaceContextRetriever
                 'task_status_counts' => $taskStatusCounts,
                 'goals_count' => $goalsCount,
                 'goal_progress' => $goalProgressFacts,
-                'activities_count' => $activitiesCount,
                 'categories_count' => $categoriesTotal,
                 'categories' => $categories->map(fn (Category $category) => [
                     'name' => $category->name,
                     'notes_count' => (int) $category->user_notes_count,
                     'tasks_count' => (int) $category->user_tasks_count,
-                    'activities_count' => (int) $category->user_activities_count,
                 ])->all(),
                 'categories_truncated' => $categoriesTotal > self::CATEGORY_LIMIT,
             ],

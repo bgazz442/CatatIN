@@ -276,7 +276,6 @@ class CatatanFeatureTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('taskCounts');
-        $response->assertViewHas('todayActivityCount');
         $response->assertViewHas('activeGoalCount');
         $response->assertDontSee('Catatan Terbaru');
         $response->assertDontSee('Catatan Saya');

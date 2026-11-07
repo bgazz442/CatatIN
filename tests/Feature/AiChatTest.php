@@ -7,7 +7,6 @@ use App\Models\AiChatMessage;
 use App\Models\AiTranscription;
 use App\Models\Catatan;
 use App\Models\Category;
-use App\Models\DailyActivity;
 use App\Models\Goal;
 use App\Models\MediaFavorite;
 use App\Models\Task;
@@ -200,32 +199,6 @@ class AiChatTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_latest_activity_is_answered_from_retrieved_fields_without_generation(): void
-    {
-        $user = User::factory()->create();
-        $category = Category::query()->firstOrCreate(['name' => 'Synthetic study']);
-        DailyActivity::create([
-            'user_id' => $user->id,
-            'category_id' => $category->id,
-            'title' => 'Membaca dokumentasi API',
-            'activity_date' => today(),
-            'start_time' => '19:00',
-            'end_time' => '20:00',
-        ]);
-        Http::fake();
-
-        $this->actingAs($user)->postJson(route('ai.chat'), [
-            'message' => 'Apa aktivitas terbaru saya?',
-        ])->assertOk();
-
-        $this->assertSame(
-            'Aktivitas terbaru dalam 30 hari terakhir: "Membaca dokumentasi API" pada '
-                .today()->format('Y-m-d').' pukul 19:00–20:00; kategori Synthetic study.',
-            $this->lastAssistantMessage($user)
-        );
-        Http::assertNothingSent();
-    }
-
     public function test_workspace_summary_uses_database_aggregates_and_discloses_sample_limits(): void
     {
         $user = User::factory()->create();
@@ -260,13 +233,6 @@ class AiChatTest extends TestCase
             'start_date' => today(),
             'status' => 'active',
         ]);
-        foreach (range(1, 4) as $index) {
-            DailyActivity::create([
-                'user_id' => $user->id,
-                'title' => 'Synthetic activity '.$index,
-                'activity_date' => today(),
-            ]);
-        }
         Http::fake();
 
         $response = $this->actingAs($user)->postJson(route('ai.chat'), [
@@ -278,7 +244,6 @@ class AiChatTest extends TestCase
         $this->assertStringContainsString('- Catatan: 2.', $answer);
         $this->assertStringContainsString('- Tugas: 6 total; pending 3, sedang dikerjakan 1, tuntas 2.', $answer);
         $this->assertStringContainsString('- Goal: 1; total progres tersimpan 15 dari 20', $answer);
-        $this->assertStringContainsString('- Aktivitas tercatat: 4.', $answer);
         $this->assertStringContainsString('Kategori global/shared tersedia:', $answer);
         $this->assertStringContainsString('tidak mengklaim daftar lengkap', $answer);
         Http::assertNothingSent();
@@ -485,7 +450,7 @@ class AiChatTest extends TestCase
             ->filter(fn (array $record) => str_ends_with($record[0]->url(), '/api/generate'))
             ->last()[0]['prompt'];
         $this->assertStringContainsString('Kategori yang tersedia bersifat global/shared', $prompt);
-        $this->assertStringContainsString('Workspace Prompt Category: 0 catatan / 1 tugas / 0 aktivitas.', $prompt);
+        $this->assertStringContainsString('Workspace Prompt Category: 0 catatan / 1 tugas.', $prompt);
         $this->assertStringContainsString('Tugas: 1 total; status terpisah: pending 1, sedang dikerjakan 0, tuntas 0.', $prompt);
         $this->assertStringContainsString('Owner live task', $prompt);
         $this->assertStringNotContainsString('Foreign private task', $prompt);
@@ -506,20 +471,6 @@ class AiChatTest extends TestCase
             'user_id' => $otherUser->id,
             'title' => 'Foreign task marker',
             'status' => 'pending',
-        ]);
-        DailyActivity::create([
-            'user_id' => $user->id,
-            'title' => 'Owner activity marker',
-            'activity_date' => today(),
-            'start_time' => '09:00',
-            'end_time' => '10:00',
-        ]);
-        DailyActivity::create([
-            'user_id' => $otherUser->id,
-            'title' => 'Foreign activity marker',
-            'activity_date' => today(),
-            'start_time' => '09:00',
-            'end_time' => '11:00',
         ]);
         Goal::create([
             'user_id' => $user->id,
@@ -562,23 +513,21 @@ class AiChatTest extends TestCase
 
         $response = $this->withSession(['auth_provider' => 'google'])
             ->actingAs($user)->postJson(route('ai.chat'), [
-                'message' => 'Apa tugas saya, aktivitas hari ini, dan progres target saya?',
+                'message' => 'Apa tugas saya dan progres target saya?',
             ]);
 
         $response->assertOk();
         $events = $this->streamEvents($response->streamedContent());
-        $this->assertCount(3, $events[2]['source_refs']);
-        $this->assertSame(['tugas', 'aktivitas', 'target'], array_column($events[2]['source_refs'], 'type'));
+        $this->assertCount(2, $events[2]['source_refs']);
+        $this->assertSame(['tugas', 'target'], array_column($events[2]['source_refs'], 'type'));
         Http::assertSent(function ($request) use ($otherUser) {
             if (! str_ends_with($request->url(), '/api/generate')) {
                 return false;
             }
 
             return str_contains($request['prompt'], 'Owner task marker')
-                && str_contains($request['prompt'], 'Owner activity marker')
                 && str_contains($request['prompt'], 'Owner goal marker')
                 && ! str_contains($request['prompt'], 'Foreign task marker')
-                && ! str_contains($request['prompt'], 'Foreign activity marker')
                 && ! str_contains($request['prompt'], 'Foreign goal marker')
                 && (int) $otherUser->id > 0;
         });
