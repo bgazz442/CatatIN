@@ -78,11 +78,11 @@ class DailyActivitiesRemovalTest extends TestCase
         foreach ([
             [
                 'message' => 'Apa saja fitur yang tersedia di CatatIn?',
-                'expected' => ['Dashboard', 'Task Manager', 'Goal Tracker', 'Catatan Belajar', 'CatatIn AI', 'Pengaturan Akun'],
+                'expected' => ['Dashboard', 'Task Manager', 'Goal Tracker', 'Catatan Belajar', 'Media Favorit', 'CatatIn AI', 'Pengaturan Akun'],
             ],
             [
                 'message' => 'Apa saja data yang bisa kamu akses dari website?',
-                'expected' => ['catatan belajar', 'tugas', 'target', 'akun yang sedang login'],
+                'expected' => ['catatan belajar', 'tugas', 'target', 'Media Favorit', 'akun yang sedang login'],
             ],
         ] as $case) {
             $response = $this->actingAs($user)->postJson(route('ai.chat'), [

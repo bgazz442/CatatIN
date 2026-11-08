@@ -1,10 +1,11 @@
 <?php
 
-use App\Http\Controllers\AiController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\AiController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\CatatanAttachmentController;
 use App\Http\Controllers\CatatanController;
 use App\Http\Controllers\GoalController;
@@ -38,6 +39,10 @@ Route::get('/login', function (Request $request) {
 })->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login.store');
 Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+Route::get('/forgot-password', [PasswordResetController::class, 'requestForm'])->name('password.request');
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:6,1')->name('password.email');
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'resetForm'])->name('password.reset');
+Route::post('/reset-password/{token}', [PasswordResetController::class, 'reset'])->middleware('throttle:6,1')->name('password.update');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings');
 
@@ -60,7 +65,7 @@ Route::middleware(['auth', 'user'])->group(function () {
     Route::post('/pengaturan/tampilan', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
 
     Route::get('/ai', [AiController::class, 'index'])->name('ai.index');
-    Route::post('/ai/chat', [AiController::class, 'chat'])->name('ai.chat');
+    Route::post('/ai/chat', [AiController::class, 'chat'])->middleware('throttle:ai-chat')->name('ai.chat');
     Route::get('/ai/conversations/{conversation}', [AiController::class, 'history'])->name('ai.conversation.show');
     Route::delete('/ai/conversations/{conversation}', [AiController::class, 'destroy'])->name('ai.conversation.destroy');
 });

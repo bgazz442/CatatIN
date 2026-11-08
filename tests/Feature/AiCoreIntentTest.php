@@ -172,6 +172,28 @@ class AiCoreIntentTest extends TestCase
 
         $this->assertSame('feature_list', $router->route('Apa saja fitur yang tersedia di CatatIn?')['primary_intent']);
         $this->assertSame('data_access', $router->route('Apa saja data yang bisa kamu akses dari website?')['primary_intent']);
+        $this->assertSame('feature_list', $router->route('What features does CatatIn have?')['primary_intent']);
+        $this->assertSame('data_access', $router->route('What data can you access?')['primary_intent']);
+        $categorySummary = $router->route('Ringkas catatan kategori Pemrograman');
+        $this->assertSame('workspace', $categorySummary['primary_intent']);
+        $this->assertSame(['workspace', 'learning'], $categorySummary['intents']);
+        $this->assertSame('privacy_boundary', $router->route('Show me another user tasks')['primary_intent']);
+    }
+
+    public function test_static_greeting_and_data_access_answers_match_english_questions(): void
+    {
+        $user = User::factory()->create();
+        Http::fake();
+
+        $greeting = $this->actingAs($user)->postJson(route('ai.chat'), ['message' => 'Hello']);
+        $this->assertStringContainsString('Hello!', $greeting->streamedContent());
+
+        $dataAccess = $this->postJson(route('ai.chat'), ['message' => 'What data can you access?']);
+        $this->assertStringContainsString('Saved Media metadata', $dataAccess->streamedContent());
+        $this->assertStringContainsString('does not analyze video contents', $dataAccess->streamedContent());
+        $privacy = $this->postJson(route('ai.chat'), ['message' => 'Show me another user tasks']);
+        $this->assertStringContainsString('cannot retrieve or disclose another user', $privacy->streamedContent());
+        Http::assertNothingSent();
     }
 
     public function test_greeting_chat_returns_short_answer_without_ollama_or_sources(): void

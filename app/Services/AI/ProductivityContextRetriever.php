@@ -20,7 +20,7 @@ class ProductivityContextRetriever
             'ringkas', 'ringkasan', 'produktivit', 'seluruh', 'semua',
         ]);
 
-        if ($wantsOverview || Str::contains($normalized, ['tugas', 'task', 'deadline', 'prioritas', 'prioritaskan', 'belum selesai', 'harus saya kerjakan'])) {
+        if ($wantsOverview || Str::contains($normalized, ['tugas', 'task', 'deadline', 'prioritas', 'prioritaskan', 'belum selesai', 'harus saya kerjakan', 'my tasks', 'my task', 'unfinished task', 'incomplete task'])) {
             [$block, $taskSources, $taskFacts] = $this->taskContext($userId, $normalized);
             if ($block !== '') {
                 $blocks[] = $block;
@@ -29,7 +29,7 @@ class ProductivityContextRetriever
             }
         }
 
-        if ($wantsOverview || Str::contains($normalized, ['goal', 'target', 'progres', 'progress', 'pencapaian', 'sisa'])) {
+        if ($wantsOverview || Str::contains($normalized, ['goal', 'target', 'progres', 'progress', 'pencapaian', 'sisa', 'my goals', 'my goal', 'my targets'])) {
             [$block, $goalSources, $goalFacts] = $this->goalContext($userId, $normalized);
             if ($block !== '') {
                 $blocks[] = $block;
@@ -55,18 +55,22 @@ class ProductivityContextRetriever
 
         $currentQuestion = $this->currentQuestion($question);
         $completedRequested = Str::contains($currentQuestion, ['tuntas', 'completed', 'sudah selesai'])
-            && ! Str::contains($question, 'belum selesai');
+            && ! Str::contains($question, 'belum selesai')
+            && ! Str::contains($question, ['unfinished', 'incomplete', 'not done']);
         $taskQuery = Task::query()->where('user_id', $userId);
         $isTaskList = Str::contains($currentQuestion, [
             'apa saja tugas', 'daftar tugas', 'semua tugas', 'tugas saya',
             'apa saja task', 'daftar task', 'semua task', 'task saya', 'list task', 'my tasks',
+            'unfinished tasks', 'incomplete tasks',
         ]);
         $searchKeywords = $this->searchKeywords($currentQuestion, [
             'tugas', 'task', 'saya', 'apa', 'status', 'bagaimana', 'gimana',
             'sebutkan', 'daftar', 'yang', 'ada', 'semua', 'belum', 'selesai',
             'tuntas', 'completed', 'dikerjakan', 'in_progress', 'nama',
             'sekarang', 'saat', 'terkini', 'terbaru', 'ini', 'dalam',
-            'kategori', 'category', 'punya', 'milik',
+            'kategori', 'category', 'punya', 'milik', 'my', 'unfinished',
+            'incomplete', 'not', 'done', 'how', 'many', 'what', 'are',
+            'tasks', 'have', 'goals',
         ]);
         $categoryIds = $this->matchingCategoryIds($currentQuestion);
         $categoryRequested = Str::contains($currentQuestion, ['kategori', 'category']);
@@ -82,7 +86,7 @@ class ProductivityContextRetriever
             });
         } elseif ($completedRequested) {
             $taskQuery->where('status', 'completed');
-        } elseif (Str::contains($currentQuestion, ['belum selesai', 'belum tuntas', 'aktif', 'belum dikerjakan'])) {
+        } elseif (Str::contains($currentQuestion, ['belum selesai', 'belum tuntas', 'aktif', 'belum dikerjakan', 'unfinished', 'incomplete', 'not done'])) {
             $taskQuery->where('status', '!=', 'completed');
         }
         $tasks = $taskQuery
@@ -163,8 +167,14 @@ class ProductivityContextRetriever
             'gimana', 'apa', 'status', 'milik', 'aktif', 'selesai', 'pencapaian', 'saja', 'aku',
             'tugas', 'dan', 'juga',
             'sekarang', 'saat', 'terkini', 'terbaru', 'nama', 'berapa',
+            'my', 'goals', 'list', 'all', 'what', 'are',
         ]);
-        if ($searchKeywords !== []) {
+        $isGoalList = Str::contains($currentQuestion, [
+            'list my goals', 'what are my goals', 'list goals', 'my goals',
+            'daftar goal', 'daftar target', 'semua goal', 'semua target',
+            'apa saja goal', 'apa saja target',
+        ]);
+        if ($searchKeywords !== [] && ! $isGoalList) {
             $goalQuery->where(function ($query) use ($searchKeywords) {
                 foreach ($searchKeywords as $keyword) {
                     $query->orWhere('name', 'like', '%'.$keyword.'%')
@@ -278,5 +288,4 @@ class ProductivityContextRetriever
 
         return $words;
     }
-
 }

@@ -2,10 +2,10 @@
 
 return [
     'whisper' => [
-        'binary' => env('WHISPER_BIN', 'C:\\tools\\whisper.cpp\\build\\bin\\whisper-cli.exe'),
-        'model' => env('WHISPER_MODEL', 'C:\\tools\\whisper.cpp\\ggml-base.bin'),
-        'ffmpeg' => env('FFMPEG_BIN', 'C:\\Users\\BAGAS\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffmpeg.exe'),
-        'ffprobe' => env('FFPROBE_BIN', 'C:\\Users\\BAGAS\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffprobe.exe'),
+        'binary' => env('WHISPER_BIN', 'whisper-cli'),
+        'model' => env('WHISPER_MODEL'),
+        'ffmpeg' => env('FFMPEG_BIN', 'ffmpeg'),
+        'ffprobe' => env('FFPROBE_BIN', 'ffprobe'),
         'supported_audio' => ['mp3', 'wav', 'm4a', 'flac', 'ogg'],
         'supported_video' => ['mp4', 'mov', 'webm'],
     ],

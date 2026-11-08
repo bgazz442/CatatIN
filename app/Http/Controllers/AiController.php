@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AiChatConversation;
-use App\Services\AI\LearningMaterialRetriever;
 use App\Services\AI\AiQueryRouter;
+use App\Services\AI\LearningMaterialRetriever;
 use App\Services\AI\OllamaService;
 use App\Services\AI\ProductivityContextRetriever;
-use App\Services\AI\WorkspaceContextRetriever;
 use App\Services\AI\WebsiteKnowledgeRetriever;
+use App\Services\AI\WorkspaceContextRetriever;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Throwable;
@@ -111,7 +111,7 @@ class AiController extends Controller
             ->reject(fn ($message) => $this->mentionsRetiredActivity($message->content))
             ->map(fn ($message) => strtoupper($message->role).': '.Str::limit($message->content, 1200))
             ->implode("\n");
-        $fallbackAnswer = $this->fallbackAnswer($route, $context['context']);
+        $fallbackAnswer = $this->fallbackAnswer($route, $context['context'], $validated['message']);
         if ($fallbackAnswer !== null) {
             return $this->streamStaticAnswer($conversation, $fallbackAnswer, []);
         }
@@ -240,7 +240,8 @@ class AiController extends Controller
     {
         return <<<PROMPT
 Kamu adalah CatatIn Assistant, asisten produktivitas pribadi yang menjawab berdasarkan data milik pengguna.
-Fitur aktif CatatIn hanya Dashboard, Task Manager, Goal Tracker, Catatan Belajar, CatatIn AI, dan Pengaturan Akun.
+Jawab menggunakan bahasa yang sama dengan pertanyaan pengguna, baik Bahasa Indonesia maupun English.
+Fitur aktif CatatIn meliputi Dashboard, Task Manager, Goal Tracker, Catatan Belajar, Media Favorit, CatatIn AI, dan Pengaturan Akun.
 Daily Activities sudah tidak tersedia. Jika ditanyakan, jelaskan bahwa fitur tersebut telah dihapus dan jangan memberi panduan lama, mengakses data lama, atau mengarang ringkasan aktivitas.
 Mode jawaban: {$mode}
 Ringkasan percakapan (hanya petunjuk dialog, bukan fakta terkini):
@@ -282,6 +283,7 @@ PROMPT;
         $taskFacts = $productivityFacts['tasks'] ?? null;
         $taskCounts = $workspaceFacts['task_status_counts'] ?? $taskFacts['status_counts'] ?? null;
         $taskTotal = $workspaceFacts['tasks_count'] ?? $taskFacts['count'] ?? null;
+        $englishQuestion = $this->isEnglishQuestion($question);
 
         if (($route['primary_intent'] ?? '') === 'workspace'
             && Str::contains($normalized, ['ringkas seluruh workspace', 'ringkasan workspace', 'kondisi workspace', 'kondisi catatin', 'apa saja yang saya punya'])) {
@@ -307,13 +309,45 @@ PROMPT;
 
         if ($taskCounts !== null && $taskTotal !== null
             && Str::contains($normalized, ['tugas', 'task'])
-            && preg_match('/\b(berapa|jumlah|banyak)\b/u', $normalized) === 1) {
-            if (Str::contains($normalized, ['belum selesai', 'belum tuntas', 'belum dikerjakan'])) {
+            && preg_match('/\b(berapa|jumlah|banyak|how many|number of|count)\b/u', $normalized) === 1) {
+            if (Str::contains($normalized, ['belum selesai', 'belum tuntas', 'belum dikerjakan', 'unfinished', 'incomplete', 'not done'])) {
                 $unfinished = $taskCounts['pending'] + $taskCounts['in_progress'];
+
+                if ($englishQuestion) {
+                    return 'You have '.$unfinished.' unfinished '.($unfinished === 1 ? 'task' : 'tasks')
+                        .' ('.$taskCounts['pending']
+                        .' pending, '.$taskCounts['in_progress'].' in progress).';
+                }
 
                 return 'Tugas yang belum tuntas berjumlah '.$unfinished
                     .' (pending '.$taskCounts['pending'].', sedang dikerjakan '
                     .$taskCounts['in_progress'].').';
+            }
+
+            $requestedStatus = match (true) {
+                Str::contains($normalized, ['pending', 'tertunda']) => 'pending',
+                Str::contains($normalized, ['completed', 'tuntas', 'selesai']) => 'completed',
+                Str::contains($normalized, ['in progress', 'in_progress', 'sedang dikerjakan']) => 'in_progress',
+                default => null,
+            };
+            if ($requestedStatus !== null) {
+                $statusCount = $taskCounts[$requestedStatus];
+                $statusLabel = [
+                    'pending' => 'pending',
+                    'completed' => $englishQuestion ? 'completed' : 'tuntas',
+                    'in_progress' => $englishQuestion ? 'in progress' : 'sedang dikerjakan',
+                ][$requestedStatus];
+
+                return $englishQuestion
+                    ? 'You have '.$statusCount.' '.$statusLabel.' '.($statusCount === 1 ? 'task' : 'tasks').'.'
+                    : 'Jumlah tugas '.$statusLabel.': '.$statusCount.'.';
+            }
+
+            if ($englishQuestion) {
+                return 'You have '.$taskTotal.' '.($taskTotal === 1 ? 'task' : 'tasks')
+                    .' total ('.$taskCounts['pending']
+                    .' pending, '.$taskCounts['in_progress'].' in progress, '
+                    .$taskCounts['completed'].' completed).';
             }
 
             return 'Jumlah tugas: '.$taskTotal.' total (pending '.$taskCounts['pending']
@@ -368,11 +402,18 @@ PROMPT;
 
         $goalFacts = $productivityFacts['goals'] ?? null;
         if (Str::contains($normalized, ['goal', 'target'])
-            && preg_match('/\b(berapa|jumlah|banyak)\b/u', $normalized) === 1
+            && preg_match('/\b(berapa|jumlah|banyak|how many|number of|count)\b/u', $normalized) === 1
             && (isset($workspaceFacts['goals_count'], $workspaceFacts['goal_progress']) || isset($goalFacts['count']))) {
             $goalCount = $workspaceFacts['goals_count'] ?? $goalFacts['count'];
             $currentTotal = $workspaceFacts['goal_progress']['current_total'] ?? $goalFacts['current_total'];
             $targetTotal = $workspaceFacts['goal_progress']['target_total'] ?? $goalFacts['target_total'];
+
+            if ($englishQuestion) {
+                return 'You have '.$goalCount.' '.($goalCount === 1 ? 'goal' : 'goals')
+                    .'. Stored progress totals '
+                    .$this->formatFactNumber($currentTotal).' of '.$this->formatFactNumber($targetTotal)
+                    .' (aggregate values, not the number of goals or a percentage).';
+            }
 
             return 'Jumlah goal: '.$goalCount
                 .'. Total progres tersimpan: '
@@ -459,37 +500,76 @@ PROMPT;
         return rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
     }
 
-    private function fallbackAnswer(array $route, string $context): ?string
+    private function fallbackAnswer(array $route, string $context, string $question): ?string
     {
         $mode = $route['primary_intent'] ?? $route['reason'] ?? 'unsupported';
+        $englishQuestion = $this->isEnglishQuestion($question);
 
         return match ($mode) {
-            'greeting' => 'Halo! Ada yang bisa saya bantu terkait produktivitas atau materi belajar Anda?',
-            'acknowledgment' => 'Sama-sama! Jika ada pertanyaan lain, saya siap membantu.',
-            'retired_feature' => 'Daily Activities sudah tidak tersedia di CatatIn. Fitur aktif yang tersedia adalah Dashboard, Task Manager, Goal Tracker, Catatan Belajar, CatatIn AI, dan Pengaturan Akun.',
-            'feature_list' => implode("\n", [
-                'Fitur aktif CatatIn:',
-                '- Dashboard: ringkasan tugas mendatang, deadline terlewat, dan target aktif.',
-                '- Task Manager: membuat, mengelola, dan memperbarui status serta deadline tugas.',
-                '- Goal Tracker: membuat target dan mencatat progresnya.',
-                '- Catatan Belajar: menyimpan dan mengelola catatan belajar beserta lampiran.',
-                '- CatatIn AI: menjawab pertanyaan berdasarkan dokumentasi website dan data akun yang diizinkan.',
-                '- Pengaturan Akun: mengatur tema tampilan akun.',
-            ]),
-            'data_access' => 'CatatIn AI dapat menggunakan catatan belajar dan lampirannya, tugas beserta status dan deadline, target beserta progres, ringkasan workspace, serta dokumentasi publik CatatIn. Data pribadi dibatasi pada akun yang sedang login; AI tidak mengakses data pengguna lain.',
-            'ambiguous' => 'Pertanyaan itu masih kurang spesifik. Maksud Anda ingin membahas tugas, target, catatan belajar, atau fitur website tertentu?',
-            'unsupported' => 'Informasi atau prosedur tersebut belum tersedia dalam sumber CatatIn yang dapat saya akses. Jika pertanyaan Anda membahas fitur atau data tertentu, coba sebutkan nama fiturnya.',
+            'greeting' => $englishQuestion
+                ? 'Hello! How can I help with your productivity or study materials?'
+                : 'Halo! Ada yang bisa saya bantu terkait produktivitas atau materi belajar Anda?',
+            'acknowledgment' => $englishQuestion
+                ? "You're welcome! Let me know if you have another question."
+                : 'Sama-sama! Jika ada pertanyaan lain, saya siap membantu.',
+            'retired_feature' => $englishQuestion
+                ? 'Daily Activities is no longer available in CatatIn. Current features include Dashboard, Task Manager, Goal Tracker, Study Notes, Saved Media, CatatIn AI, and Account Settings.'
+                : 'Daily Activities sudah tidak tersedia di CatatIn. Fitur aktif yang tersedia adalah Dashboard, Task Manager, Goal Tracker, Catatan Belajar, Media Favorit, CatatIn AI, dan Pengaturan Akun.',
+            'privacy_boundary' => $englishQuestion
+                ? 'I can only help with data you are authorized to access. I cannot retrieve or disclose another user’s private account data.'
+                : 'Saya hanya dapat membantu mengakses data yang memang menjadi hak Anda. Saya tidak dapat mengambil atau membocorkan data privat akun pengguna lain.',
+            'feature_list' => $englishQuestion
+                ? implode("\n", [
+                    'Current CatatIn features:',
+                    '- Dashboard: summaries of upcoming tasks, overdue deadlines, and active goals.',
+                    '- Task Manager: create and manage tasks, statuses, and deadlines.',
+                    '- Goal Tracker: create goals and record progress.',
+                    '- Study Notes: save and manage notes and attachments.',
+                    '- Saved Media: save and manage study-media links.',
+                    '- CatatIn AI: answer questions using available documentation and authorized account data.',
+                    '- Account Settings: change account appearance.',
+                ])
+                : implode("\n", [
+                    'Fitur aktif CatatIn:',
+                    '- Dashboard: ringkasan tugas mendatang, deadline terlewat, dan target aktif.',
+                    '- Task Manager: membuat, mengelola, dan memperbarui status serta deadline tugas.',
+                    '- Goal Tracker: membuat target dan mencatat progresnya.',
+                    '- Catatan Belajar: menyimpan dan mengelola catatan belajar beserta lampiran.',
+                    '- Media Favorit: menyimpan dan mengelola tautan media belajar.',
+                    '- CatatIn AI: menjawab pertanyaan berdasarkan dokumentasi website dan data akun yang diizinkan.',
+                    '- Pengaturan Akun: mengatur tema tampilan akun.',
+                ]),
+            'data_access' => $englishQuestion
+                ? 'CatatIn AI can use study notes and attachments, tasks and their statuses and deadlines, goals and progress, accessible Saved Media metadata, workspace summaries, and public CatatIn documentation. It does not analyze video contents or access private data belonging to other users.'
+                : 'CatatIn AI dapat menggunakan catatan belajar dan lampirannya, tugas beserta status dan deadline, target beserta progres, metadata Media Favorit yang dimiliki akun atau dibagikan, ringkasan workspace, serta dokumentasi publik CatatIn. Data pribadi dibatasi pada akun yang sedang login; AI tidak mengakses data privat pengguna lain atau menganalisis isi video.',
+            'ambiguous' => $englishQuestion
+                ? 'Could you be more specific? Do you mean tasks, goals, study notes, or a particular website feature?'
+                : 'Pertanyaan itu masih kurang spesifik. Maksud Anda ingin membahas tugas, target, catatan belajar, atau fitur website tertentu?',
+            'unsupported' => $englishQuestion
+                ? 'That information or procedure is not available in the CatatIn sources I can access. If you mean a particular feature or account data, please name it.'
+                : 'Informasi atau prosedur tersebut belum tersedia dalam sumber CatatIn yang dapat saya akses. Jika pertanyaan Anda membahas fitur atau data tertentu, coba sebutkan nama fiturnya.',
             'website' => trim($context) === ''
-                ? 'Saya tidak menemukan dokumentasi CatatIn yang mendukung pertanyaan tersebut. Saya tidak ingin menebak fitur atau aturan yang belum tersedia.'
+                ? ($englishQuestion
+                    ? 'I could not find CatatIn documentation supporting that question, so I will not guess about an undocumented feature or rule.'
+                    : 'Saya tidak menemukan dokumentasi CatatIn yang mendukung pertanyaan tersebut. Saya tidak ingin menebak fitur atau aturan yang belum tersedia.')
                 : null,
             'learning' => trim($context) === ''
-                ? 'Saya tidak menemukan catatan atau lampiran milik akun Anda yang relevan untuk pertanyaan tersebut.'
+                ? ($englishQuestion
+                    ? 'I could not find relevant study notes, attachments, or saved-media metadata in your account.'
+                    : 'Saya tidak menemukan catatan, lampiran, atau metadata media belajar yang relevan di akun Anda.')
                 : null,
             'productivity' => trim($context) === ''
-                ? 'Saya tidak menemukan data produktivitas milik akun Anda yang relevan untuk pertanyaan tersebut.'
+                ? ($englishQuestion
+                    ? 'I could not find relevant productivity data in your account.'
+                    : 'Saya tidak menemukan data produktivitas milik akun Anda yang relevan untuk pertanyaan tersebut.')
                 : null,
             default => null,
         };
+    }
+
+    private function isEnglishQuestion(string $question): bool
+    {
+        return preg_match('/\b(?:what|how|who|when|where|why|which|my|do|does|is|are|can|please|explain|summari[sz]e|compare|give|continue|define|describe|elaborate|discuss|show|reveal|another|other|unfinished|incomplete|thanks?|hello|hi)\b/iu', $question) === 1;
     }
 
     private function streamStaticAnswer(AiChatConversation $conversation, string $answer, array $sources = [])
@@ -593,5 +673,4 @@ PROMPT;
             return ! is_string($path) || preg_match('~(?:^|/)aktivitas(?:/|$)~u', $path) !== 1;
         }));
     }
-
 }

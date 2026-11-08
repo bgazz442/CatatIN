@@ -1,128 +1,85 @@
-# CatatIn — Aplikasi Catatan Belajar Digital Siswa SMK
+# CatatIn
 
-> **"Catat, Pahami, Raih Prestasi."**
+CatatIn is a Laravel web application for personal learning and productivity. Users can manage study notes, categories, tasks, goals and progress, saved media, private attachments, and an AI learning assistant.
 
-**CatatIn** adalah aplikasi catatan belajar digital yang dirancang khusus untuk siswa SMK jurusan **Rekayasa Perangkat Lunak (RPL)**. Aplikasi ini mendemonstrasikan penerapan arsitektur **MVC (Model-View-Controller)**, operasi **CRUD**, validasi server-side, migrasi basis data, dan antarmuka modern menggunakan Tailwind CSS.
+## Stack
 
-Aplikasi mendukung autentikasi pengguna dan pengelolaan materi serta produktivitas secara lokal, cocok untuk media pembelajaran, portofolio praktik, dan bahan ujian kompetensi kejuruan.
+- Laravel 11 and PHP 8.2+
+- Blade, Tailwind CSS 3, Vite 5, and Lucide icons
+- MySQL for local/deployed application data
+- Ollama for local AI chat; the legacy AI transcription feature is currently disabled
 
----
+## Features
 
-## 🛠️ Teknologi yang Digunakan
+- Account registration, login/logout, password reset, and account settings.
+- Notes with search, categories, favorites, and private attachments.
+- Tasks with status, category, due date, filtering, and search.
+- Goals with progress history and optional private images.
+- Saved media links and favorites.
+- CatatIn AI with user-specific conversation history, relevant notes/productivity/saved-media retrieval, and source references.
+- Admin dashboard and user administration for authorized administrators.
 
-- **Backend**: Laravel 11.x (PHP 8.3+)
-- **Frontend Engine**: Blade Templating
-- **Styling**: Tailwind CSS v3 dengan palet khusus CatatIn (Primary: `#6D5CE8`, Background: `#F8FAFC`, Surface: `#FFFFFF`)
-- **Icons**: Lucide Icons
-- **Database**: MySQL (`catatin_db`)
-- **ORM**: Eloquent ORM
-- **Asset Bundler**: Vite 5.x
+## Local setup (Laragon / Windows)
 
----
+Requirements: PHP 8.2+, Composer, Node.js/npm, and MySQL. Enable the PHP extensions required by Laravel (including `pdo_mysql`, `fileinfo`, `mbstring`, `openssl`, and `zip`).
 
-## 📁 Struktur Utama Proyek
+1. Copy `.env.example` to `.env` if needed and set a unique local `APP_KEY` with `php artisan key:generate`.
+2. Create a local MySQL database and set `DB_CONNECTION=mysql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in `.env`.
+3. Install dependencies and build assets:
 
-- **Model**: [`app/Models/Catatan.php`](file:///c:/laragon/www/Catatin/app/Models/Catatan.php) — Definisi tabel, mass assignment (`$fillable`), type casting (`favorit` boolean), dan Eloquent query scopes (`search`, `filterKategori`).
-- **Controller**: [`app/Http/Controllers/CatatanController.php`](file:///c:/laragon/www/Catatin/app/Http/Controllers/CatatanController.php) — Menangani logika dashboard statistik, CRUD, pagination, filtering, serta toggle status favorit.
-- **Routes**: [`routes/web.php`](file:///c:/laragon/www/Catatin/routes/web.php) — Daftar rute bernama (`dashboard`, `catatan.index`, `catatan.create`, `catatan.store`, `catatan.show`, `catatan.edit`, `catatan.update`, `catatan.destroy`, `catatan.toggle-favorit`, `catatan.favorit`).
-- **Migration**: [`database/migrations/2026_10_28_173530_create_catatan_table.php`](file:///c:/laragon/www/Catatin/database/migrations/2026_10_28_173530_create_catatan_table.php) — Skema tabel `catatan` di MySQL.
-- **Seeder Opsional**: [`database/seeders/CatatanSeeder.php`](file:///c:/laragon/www/Catatin/database/seeders/CatatanSeeder.php) — Contoh materi pembelajaran SMK untuk demonstrasi.
-- **Views**:
-  - [`resources/views/layouts/app.blade.php`](file:///c:/laragon/www/Catatin/resources/views/layouts/app.blade.php) — Layout utama, sidebar navigasi, notifikasi flash, modal konfirmasi hapus.
-  - [`resources/views/components/card-catatan.blade.php`](file:///c:/laragon/www/Catatin/resources/views/components/card-catatan.blade.php) — Kartu catatan reusable dengan badge warna tiap mapel.
-  - [`resources/views/dashboard.blade.php`](file:///c:/laragon/www/Catatin/resources/views/dashboard.blade.php) — Statistik database dan 5 catatan terbaru.
-  - [`resources/views/catatan/index.blade.php`](file:///c:/laragon/www/Catatin/resources/views/catatan/index.blade.php) — Pencarian judul/isi, filter kategori, status favorit, sortir, dan pagination.
-  - [`resources/views/catatan/favorit.blade.php`](file:///c:/laragon/www/Catatin/resources/views/catatan/favorit.blade.php) — Halaman khusus materi berbintang (favorit).
-  - [`resources/views/catatan/create.blade.php`](file:///c:/laragon/www/Catatin/resources/views/catatan/create.blade.php) — Form tambah catatan dengan validasi dan penghitung karakter.
-  - [`resources/views/catatan/edit.blade.php`](file:///c:/laragon/www/Catatin/resources/views/catatan/edit.blade.php) — Form edit catatan dengan method spoofing `@method('PUT')`.
-  - [`resources/views/catatan/show.blade.php`](file:///c:/laragon/www/Catatin/resources/views/catatan/show.blade.php) — Detail materi lengkap dengan rendering teks aman (`nl2br(e($catatan->isi))`).
-- **Automated Tests**: [`tests/Feature/CatatanFeatureTest.php`](file:///c:/laragon/www/Catatin/tests/Feature/CatatanFeatureTest.php) — 15 skenario pengujian fitur otomatis.
+   ```sh
+   composer install
+   npm ci
+   npm run build
+   ```
 
----
+4. **Review pending migrations before applying them.** Do not run `php artisan migrate` on a database containing data you need until the pending `2026_11_07_000000_remove_daily_activities` migration has been reviewed: it drops the `daily_activities` table. Back up the database and decide how to preserve/archive those records first. The migration status can be inspected with `php artisan migrate:status`; do not use `migrate:fresh` or `db:wipe`.
+5. Once migrations have been reviewed and the database is backed up, apply approved migrations with `php artisan migrate`.
+6. Start the application with `php artisan serve` and open `http://127.0.0.1:8000`.
 
-## 🚀 Panduan Menjalankan Aplikasi
+For iterative frontend development, use `npm run dev`. Keep the local Laragon `.env` private; never commit it.
 
-### 1. Prasyarat Sistem
-Pastikan Laragon atau server lokal aktif (PHP 8.2+, MySQL, Composer, Node.js & npm).
+## Environment configuration
 
-### 2. Konfigurasi Database (.env)
-Buka file `.env` dan pastikan pengaturan MySQL sudah terhubung:
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=catatin_db
-DB_USERNAME=root
-DB_PASSWORD=
-```
+Configure these values in the deployment environment, not in source control:
 
-Buat database MySQL bernama `catatin_db` jika belum ada:
-```bash
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS catatin_db;"
-```
+- **Application:** `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://your-domain`, and a unique `APP_KEY`.
+- **Database:** production MySQL connection values. Do not point automated tests at production.
+- **Session/cache/queue:** keep `SESSION_DRIVER=database` for password-reset session revocation and provision the required tables. Configure persistent production-compatible cache/queue drivers and their tables/services as needed.
+- **Mail:** `MAIL_MAILER=log` is for local development only and does not send email. Password reset reports that no email was sent and writes notifications to the local log in this mode. Configure and verify SMTP or another supported delivery transport before enabling real password resets.
+- **File storage:** learning attachments and goal images use the private `learning_private` disk and authorized application routes; they are not public assets. Configure persistent private storage or an appropriately protected object store for deployment. The `public` disk's storage symlink is for intentionally public files only.
+- **Admin bootstrap (optional):** set `ADMIN_PASSWORD` only in a local/deployment secret store before running the approved `AdminSeeder`. Never put the value in Git.
 
-### 3. Menjalankan Migrasi Tabel
-Jalankan migrasi untuk membuat tabel aplikasi dan menambahkan kolom role/status akun:
-```bash
-php artisan migrate
-```
+Run `php artisan config:cache` only after deployment environment variables have been set; clear cached configuration when changing them.
 
-### 4. Setup akun Admin (opsional)
-Atur `ADMIN_PASSWORD` hanya di file `.env` lokal dengan password unik minimal 16 karakter yang memiliki huruf besar, huruf kecil, angka, dan simbol. Jangan bagikan atau commit nilainya. Buat/perbarui akun Admin secara aman dengan seeder berikut (aman dijalankan ulang dan tidak mengganti password Admin yang sudah ada):
-```bash
-php artisan db:seed --class=AdminSeeder
-```
-Email Admin ditetapkan sebagai `admin54321@gmail.com`. Seeder hanya membuat akun baru dengan password kuat dari `ADMIN_PASSWORD`; akun yang sudah ber-role Admin dibiarkan tanpa perubahan. Jika email tersebut sudah dimiliki akun non-admin, seeder berhenti dan meminta verifikasi serta penyelesaian konflik secara manual, bukan menaikkan role berdasarkan email saja. Login Admin menuju `/admin/dashboard`; halaman itu hanya dapat diakses akun Admin aktif. Registrasi publik tidak dapat membuat email Admin atau menetapkan role.
+## CatatIn AI and transcription
 
-Dashboard Admin menyediakan statistik database, daftar pengguna dengan pencarian/filter/paginasi, detail akun, pengelolaan akun, serta pengaturan profil Admin. Hanya alamat Admin utama yang dikonfigurasi yang dapat memberi atau mencabut role Admin dan mengelola akun Admin lain; admin tidak dapat mengubah atau menghapus akunnya sendiri. Admin memakai layout terpisah dan tidak dapat membuka route fitur user; seluruh route administrasi dilindungi middleware `auth` dan `admin`.
+Chat uses a locally reachable Ollama service. Configure `OLLAMA_BASE_URL` and `OLLAMA_MODEL`; install/pull the chosen model separately. Retrieval is scoped to the signed-in user's notes, attachments, tasks, goals, and accessible saved-media metadata (title, description, platform, and category); media links do not imply that video contents are analyzed. Chat requests are rate limited per signed-in user. CatatIn does not automatically download models or send prompts to a paid external AI API. A hosted demo cannot access Ollama on a developer's computer: deploy an Ollama service privately and securely, or mark AI as unavailable in the demo.
 
-*(Opsional)* Jika ingin mengisi data contoh materi pelajaran untuk demonstrasi langsung:
-```bash
-php artisan db:seed --class=CatatanSeeder
-```
+Audio/video transcription is currently disabled: no user-facing transcription route is registered, and the queued worker marks legacy pending jobs as disabled. Existing transcription records are retained, but new media is not transcribed. Restoring this feature requires implementing and testing its authenticated upload/status/result flow and installing whisper.cpp, FFmpeg/ffprobe, and a compatible model on the host. No model is downloaded automatically.
 
-### 5. Kompilasi Aset Frontend (Tailwind CSS)
-```bash
-npm run build
-```
-*(Atau gunakan `npm run dev` untuk live reload saat pengembangan)*
+## Tests and checks
 
-### 6. Menjalankan Server Lokal
-```bash
-php artisan serve
-```
-Akses aplikasi melalui browser di: **`http://127.0.0.1:8000`**
+The PHPUnit suite uses the database configured in `phpunit.xml`; verify it points to an isolated test database or an in-memory database before running:
 
----
-
-## 🧪 Menjalankan Automated Tests
-
-Aplikasi dilengkapi dengan 15 skenario Feature Test komprehensif pada database terpisah (`catatin_test_db`).
-
-Jalankan seluruh pengujian:
-```bash
+```sh
 php artisan test
+npm run build
+php artisan route:list
+php artisan migrate:status
 ```
 
-Hasil pengujian mencakup:
-- ✅ Dashboard terbuka dengan status HTTP 200
-- ✅ Daftar catatan dan badge kategori tampil
-- ✅ Penyimpanan catatan baru ke database
-- ✅ Validasi penolakan data tidak valid
-- ✅ Detail catatan dan keamanan escaping HTML
-- ✅ Pembaruan data tanpa duplikasi catatan
-- ✅ Penghapusan data via method DELETE
-- ✅ Penanganan error 404 jika ID tidak ditemukan
-- ✅ Pencarian berbasis kata kunci judul dan isi materi
-- ✅ Filter mata pelajaran / kategori
-- ✅ Fitur toggle favorit (bintang)
-- ✅ Halaman filter khusus catatan favorit
-- ✅ Akurasi hitungan statistik dashboard
-- ✅ Pagination berjalan normal saat data banyak
-- ✅ Validasi metode HTTP request penghapusan
+The project has feature coverage for authentication/password reset, notes, productivity, categories, attachments, admin access, and AI behavior. Add regression tests for any behavior changes. Do not run the suite against a production database.
 
----
+## Deployment notes
 
-## 🔒 Catatan Keamanan & Batasan Penggunaan
+This is a Laravel application with MySQL, persistent sessions/cache, private file storage, and optional Ollama. Vercel is not the recommended host for the complete application: its serverless model does not provide the persistent local storage or long-running local Ollama service this project expects.
 
-Aplikasi CatatIn dirancang untuk kebutuhan **praktik lokal dan demonstrasi akademik**. Halaman Admin memerlukan akun aktif ber-role `admin`; akses ditolak untuk guest dan user biasa. Gunakan konfigurasi rahasia lingkungan yang aman dan tinjau seluruh konfigurasi deployment sebelum penggunaan production.
+Deploy the Laravel backend to a PHP-capable host (for example, a managed Laravel/PHP platform or a VPS), use managed MySQL and persistent private/object storage, configure HTTPS and production secrets, and run only reviewed migrations after taking a backup. GitHub can host the source repository and CI; Vercel may host a separate static frontend if one is introduced, but it does not replace the Laravel backend. Confirm every optional external service is reachable from the deployed backend.
+
+## Security and data handling
+
+- Private application routes authorize records against the signed-in user; admin routes require admin authorization.
+- Do not publish `.env`, credentials, AI model files, private storage, SQL dumps, database backups, or logs.
+- Use HTTPS, secure production cookies, a least-privilege database account, backups, and monitored error reporting in deployment.
+- Review migrations and retention requirements before changing or deleting stored user data.

@@ -19,11 +19,25 @@ class AiQueryRouter
             return $this->result('retired_feature', [], 'retired-feature');
         }
 
-        if (Str::contains($compact, ['apa saja fitur', 'fitur yang tersedia', 'fitur aktif', 'fitur tersedia'])) {
+        if (Str::contains($compact, ['another user', 'other user', 'pengguna lain', 'akun lain', 'user lain'])
+            && Str::contains($compact, [
+                'access', 'show', 'reveal', 'read', 'display', 'list',
+                'akses', 'tampilkan', 'lihat', 'baca', 'ungkap',
+            ])) {
+            return $this->result('privacy_boundary', [], 'cross-user-data-request');
+        }
+
+        if (Str::contains($compact, [
+            'apa saja fitur', 'fitur yang tersedia', 'fitur aktif', 'fitur tersedia',
+            'what features are available', 'what features does catatin have',
+        ])) {
             return $this->result('feature_list', [], 'active-feature-list');
         }
 
-        if (Str::contains($compact, ['data yang bisa kamu akses', 'data yang dapat kamu akses', 'data apa yang bisa kamu akses'])) {
+        if (Str::contains($compact, [
+            'data yang bisa kamu akses', 'data yang dapat kamu akses', 'data apa yang bisa kamu akses',
+            'what data can you access', 'what data do you access',
+        ])) {
             return $this->result('data_access', [], 'data-access');
         }
 
@@ -62,6 +76,7 @@ class AiQueryRouter
             $asksForNoteItems = Str::contains($compact, [
                 'apa saja catatan', 'apa catatan dalam kategori', 'daftar catatan',
                 'sebutkan catatan', 'catatan kategori apa saja', 'isi catatan',
+                'ringkas catatan kategori', 'rangkum catatan kategori',
             ]) && ! Str::contains($compact, ['berapa catatan', 'jumlah catatan']);
             if ($asksForNoteItems) {
                 $intents[] = 'learning';
@@ -76,8 +91,14 @@ class AiQueryRouter
             'materi saya', 'materi yang saya pelajari', 'materi yang dipelajari',
             'jelaskan materi', 'lampiran saya', 'dokumen saya',
             'buat soal latihan', 'soal latihan dari', 'materi ini',
-            'perulangan', 'algoritma',
-        ]);
+            'my notes', 'my materials', 'materials i saved', 'summarize my notes',
+            'explain my notes', 'saved notes', 'saved material', 'summarize the note',
+            'explain the note', 'compare my notes', 'make flashcards from my notes',
+            'create a quiz from my notes', 'favorite media', 'favorite videos', 'saved media',
+            'videos i saved', 'media favorit', 'video favorit', 'catatan kategori',
+            'notes in category', 'notes under category',
+        ]) || (Str::contains($compact, ['perulangan', 'algoritma'])
+            && preg_match('/^(apa itu|definisi|what is|what s|define)\b/iu', $compact) !== 1);
         if ($explicitLearning) {
             return $this->result('learning', ['learning'], 'learning');
         }
@@ -94,22 +115,23 @@ class AiQueryRouter
             'progres goal', 'progress saya', 'deadline', 'sisa target',
             'nama tugas', 'nama task', 'deskripsi tugas', 'deskripsi task',
             'status tugas saya', 'status task saya',
+            'my tasks', 'my task', 'unfinished tasks', 'incomplete tasks',
+            'my goals', 'my goal', 'my targets', 'my progress',
+            'how many tasks', 'how many goals', 'task status',
+            'tasks are unfinished', 'tasks not done',
+            'pending tasks', 'completed tasks', 'list my goals', 'number of tasks',
         ]);
         if ($explicitProductivity) {
             return $this->result('productivity', ['productivity'], 'productivity');
         }
 
-        if (preg_match('/^(apa itu|apa perbedaan|beda|jelaskan apa|jelaskan konsep|bagaimana cara belajar|cara belajar|apa arti|siapa|kapan|mengapa|definisi)\b/iu', $compact) === 1
-            || Str::contains($compact, ['php dan javascript', 'php sama javascript', 'php vs javascript'])) {
-            return $this->result('general', [], 'general-knowledge');
-        }
-
-        $followUp = preg_match('/^(jelaskan lebih detail|jelaskan lebih lanjut|berikan contoh|beri contoh|bagaimana caranya|bagaimana cara melakukannya|buat contohnya|lanjutkan|jelaskan bagian|jelaskan lagi)\b/iu', $compact) === 1
+        $followUp = preg_match('/^(jelaskan lebih detail|jelaskan lebih lanjut|berikan contoh|beri contoh|bagaimana caranya|bagaimana cara melakukannya|buat contohnya|lanjutkan|jelaskan bagian|jelaskan lagi|explain more|give an example|continue|elaborate|what about that)\b/iu', $compact) === 1
             || preg_match('/^(jelaskan|jelaskan|rangkum|ringkas|buat soal|contoh)\b/iu', $compact) === 1
                 && ! Str::contains($compact, [
                     'catatan saya', 'catatan belajar', 'materi saya', 'lampiran saya',
                     'tugas saya', 'goal saya', 'target saya',
                     'perulangan', 'algoritma', 'materi yang saya pelajari',
+                    'jelaskan konsep',
                 ]);
         if ($followUp) {
             $topicIntent = $this->inferTopicIntent($history."\n".$summary);
@@ -118,6 +140,11 @@ class AiQueryRouter
             }
 
             return $this->result('ambiguous', [], 'follow-up-clarification');
+        }
+
+        if (preg_match('/^(apa itu|apa perbedaan|beda|jelaskan apa|jelaskan konsep|bagaimana cara belajar|cara belajar|apa arti|siapa|kapan|mengapa|definisi|what is|what are|what s|explain|how does|how do|how can|why|who|when|define|compare)\b/iu', $compact) === 1
+            || Str::contains($compact, ['php dan javascript', 'php sama javascript', 'php vs javascript'])) {
+            return $this->result('general', [], 'general-knowledge');
         }
 
         if (Str::contains($compact, [
@@ -141,6 +168,7 @@ class AiQueryRouter
             'data yang dapat kamu akses', 'troubleshooting',
             'gimana cara buat task', 'gimana cara buat tugas',
             'fitur dashboard buat apa', 'fungsi dashboard',
+            'how do i create', 'how to create', 'how do i use', 'how to use',
         ]);
         if ($website) {
             return $this->result('website', ['website'], 'website');
@@ -189,7 +217,7 @@ class AiQueryRouter
     private function inferTopicIntent(string $context): ?string
     {
         $normalized = mb_strtolower($context);
-        if (Str::contains($normalized, ['catatan', 'materi', 'lampiran', 'pdf'])) {
+        if (Str::contains($normalized, ['catatan', 'materi', 'lampiran', 'pdf', 'notes', 'materials', 'attachment', 'media favorit', 'favorite media', 'favorite video'])) {
             return 'learning';
         }
         if (Str::contains($normalized, ['dashboard', 'task manager', 'goal tracker', 'pengaturan', 'registrasi', 'login', 'catatin ai'])) {
@@ -198,7 +226,7 @@ class AiQueryRouter
         if (Str::contains($normalized, ['cara membuat task', 'cara membuat tugas', 'bagaimana cara'])) {
             return 'website';
         }
-        if (Str::contains($normalized, ['tugas', 'task', 'goal', 'target', 'deadline', 'progres'])) {
+        if (Str::contains($normalized, ['tugas', 'task', 'goal', 'target', 'deadline', 'progres', 'progress'])) {
             return 'productivity';
         }
 

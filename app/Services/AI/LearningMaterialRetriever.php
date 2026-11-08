@@ -4,6 +4,7 @@ namespace App\Services\AI;
 
 use App\Models\Catatan;
 use App\Models\CatatanAttachment;
+use App\Models\MediaFavorite;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -22,6 +23,10 @@ class LearningMaterialRetriever
             $queryEmbedding = null;
         }
         $candidates = [];
+        $mediaRequested = Str::contains(mb_strtolower($question), [
+            'media favorit', 'video favorit', 'favorite media', 'favorite video',
+            'saved media', 'videos i saved',
+        ]);
 
         $notes = Catatan::query()->where('user_id', $userId)->with('category');
         $noteCandidates = $this->mergeMatchingAndRecent(
@@ -100,6 +105,61 @@ class LearningMaterialRetriever
                     'link' => route('catatan.show', $note->id),
                 ]
             );
+        }
+
+        if ($mediaRequested) {
+            $mediaQuery = MediaFavorite::query()
+                ->where(function (Builder $query) use ($userId) {
+                    $query->whereNull('user_id')->orWhere('user_id', $userId);
+                })
+                ->with('category');
+            $matchingMedia = clone $mediaQuery;
+            if ($keywords !== []) {
+                $matchingMedia->where(function (Builder $query) use ($keywords) {
+                    foreach ($keywords as $keyword) {
+                        $query->orWhere('title', 'like', '%'.$keyword.'%')
+                            ->orWhere('description', 'like', '%'.$keyword.'%')
+                            ->orWhereHas('category', fn (Builder $category) => $category
+                                ->where('name', 'like', '%'.$keyword.'%'));
+                    }
+                });
+            }
+            $mediaItems = $matchingMedia->latest()->limit(8)->get()
+                ->concat((clone $mediaQuery)->latest()->limit(8)->get())
+                ->unique('id')
+                ->take(8)
+                ->values();
+
+            foreach ($mediaItems as $media) {
+                $category = $media->category?->name;
+                $details = [
+                    'Kategori: '.($category ?: 'tanpa kategori'),
+                    'Platform: '.$media->platform,
+                    'Deskripsi: '.($media->description ?: 'tidak tersedia'),
+                ];
+                $candidates[] = $this->candidate(
+                    'media',
+                    $media->id,
+                    [$media->title, $media->description, $media->platform, $category],
+                    [$media->title, $media->description, $media->platform, $category],
+                    ['title' => $media->title, 'category' => $category, 'platform' => $media->platform],
+                    $keywords,
+                    $this->materialBlock('Media tersimpan', $media->title, $details),
+                    [
+                        'type' => 'media',
+                        'title' => $media->title,
+                        'category' => $category,
+                        'link' => route('media-favorites.show', $media),
+                    ]
+                );
+            }
+        }
+
+        if ($mediaRequested) {
+            $candidates = array_values(array_filter(
+                $candidates,
+                fn (array $candidate) => $candidate['source_type'] === 'media'
+            ));
         }
 
         if ($candidates === []) {
@@ -186,6 +246,9 @@ class LearningMaterialRetriever
             'yang', 'dengan', 'untuk', 'dari', 'apa', 'bagaimana', 'saya', 'kamu',
             'ini', 'itu', 'pada', 'akan', 'adalah', 'tentang', 'materi', 'tolong',
             'jelaskan', 'rangkum', 'punya', 'pernah', 'sudah', 'belajar',
+            'my', 'media', 'favorit', 'favorite', 'video', 'videos', 'saved',
+            'show', 'list', 'saja', 'what', 'are', 'all', 'the', 'me', 'do',
+            'about', 'i',
         ];
 
         return array_values(array_unique(array_filter(

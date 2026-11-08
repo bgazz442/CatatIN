@@ -22,7 +22,7 @@ class AiPhase3Test extends TestCase
         $this->assertContains('learning', $router->route('Rangkum catatan saya tentang algoritma')['intents']);
         $this->assertContains('learning', $router->route('Buat soal latihan dari materi ini')['intents']);
         $this->assertSame([], $router->route('Apa arti kedaulatan?')['intents']);
-        $this->assertSame([], $router->route('Apa video favorit saya?')['intents']);
+        $this->assertContains('learning', $router->route('Apa video favorit saya?')['intents']);
     }
 
     public function test_chat_updates_existing_summary_without_migration_or_cross_user_access(): void

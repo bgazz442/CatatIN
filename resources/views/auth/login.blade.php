@@ -231,6 +231,7 @@
                                 <input class="form-check-input" type="checkbox" name="remember" value="1" id="login-remember" @checked(old('remember'))>
                                 <label class="form-check-label" for="login-remember">Ingat saya</label>
                             </div>
+                            <a class="small text-decoration-none" href="{{ route('password.request') }}" style="color: var(--pine);">Lupa password?</a>
                         </div>
                         <button type="submit" class="btn submit-button w-100">Masuk ke CatatIn</button>
                     </form>

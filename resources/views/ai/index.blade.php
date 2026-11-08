@@ -559,6 +559,7 @@
         let partialMessage = null;
         let answerText = '';
         let receivedDone = false;
+        let userFacingError = null;
 
         try {
             const response = await fetch('/ai/chat', {
@@ -575,7 +576,15 @@
                 }),
             });
 
-            if (!response.ok) throw new Error('Gagal memproses permintaan.');
+            if (!response.ok) {
+                if (response.status === 429) {
+                    userFacingError = 'Batas penggunaan CatatIn AI tercapai. Tunggu sebentar sebelum mencoba lagi.';
+                } else if (response.status === 422) {
+                    const validation = await response.json().catch(() => null);
+                    userFacingError = validation?.message || 'Pertanyaan tidak valid. Periksa isi pesan lalu coba lagi.';
+                }
+                throw new Error('Chat request failed.');
+            }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -612,6 +621,7 @@
                     return;
                 }
                 if (event.type === 'error') {
+                    userFacingError = event.message || 'Ollama tidak dapat menyelesaikan jawaban. Periksa layanannya lalu coba lagi.';
                     throw new Error(event.message || 'Jawaban gagal dibuat.');
                 }
             };
@@ -633,7 +643,7 @@
             if (error.name === 'AbortError') {
                 appendMessage('assistant', 'Jawaban dihentikan. Kamu bisa mengirim pertanyaan berikutnya untuk melanjutkan.');
             } else {
-                appendMessage('assistant', 'Maaf, saya tidak bisa menjawab saat ini. Silakan cek koneksi atau coba lagi beberapa saat lagi.');
+                appendMessage('assistant', userFacingError || 'Maaf, saya tidak bisa menjawab saat ini. Silakan cek koneksi atau coba lagi beberapa saat lagi.');
             }
         } finally {
             removeThinking();
