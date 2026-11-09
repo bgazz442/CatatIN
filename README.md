@@ -39,6 +39,26 @@ Requirements: PHP 8.3+, Composer, Node.js/npm, and MySQL. Use the PHP 8.3 runtim
 
 For iterative frontend development, use `npm run dev`. Keep the local Laragon `.env` private; never commit it.
 
+### Testing password-reset email locally with Mailpit
+
+Install Mailpit for Windows and start it in a terminal with `mailpit`. Its default SMTP listener is `127.0.0.1:1025`, and its inbox is available at `http://127.0.0.1:8025`.
+
+Set these values manually in the local `.env` file (do not commit it):
+
+```dotenv
+APP_URL=http://127.0.0.1:8000
+MAIL_MAILER=smtp
+MAIL_HOST=127.0.0.1
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="catatin@localhost"
+MAIL_FROM_NAME="CatatIn"
+```
+
+If using a Laragon virtual host instead of `php artisan serve`, set `APP_URL` to that exact local origin. The SMTP mailer uses the individual host/port variables; `MAIL_URL` is intentionally not used. Start CatatIn, open the forgot-password page, and submit the email address of a local account. View the reset email in the Mailpit inbox; its link uses `APP_URL`.
+
 ## Environment configuration
 
 Configure these values in the deployment environment, not in source control:
@@ -46,7 +66,23 @@ Configure these values in the deployment environment, not in source control:
 - **Application:** `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://your-domain`, and a unique `APP_KEY`.
 - **Database:** production MySQL connection values. Do not point automated tests at production.
 - **Session/cache/queue:** keep `SESSION_DRIVER=database` for password-reset session revocation and provision the required tables. Configure persistent production-compatible cache/queue drivers and their tables/services as needed.
-- **Mail:** `MAIL_MAILER=log` is for local development only and does not send email. Password reset reports that no email was sent and writes notifications to the local log in this mode. Configure and verify SMTP or another supported delivery transport before enabling real password resets.
+- **Mail:** Configure the SMTP mailer with deployment environment variables; never commit credentials. For Brevo SMTP, set the following values in the deployment environment or local `.env` (replace placeholders; do not use an API key as the SMTP password):
+
+  ```dotenv
+  APP_ENV=production
+  APP_DEBUG=false
+  APP_URL=https://your-domain.example
+  MAIL_MAILER=smtp
+  MAIL_HOST=smtp-relay.brevo.com
+  MAIL_PORT=587
+  MAIL_USERNAME=your-brevo-login-email
+  MAIL_PASSWORD=your-brevo-smtp-key
+  MAIL_ENCRYPTION=tls
+  MAIL_FROM_ADDRESS=your-verified-sender@example.com
+  MAIL_FROM_NAME="CatatIn"
+  ```
+
+  Use the SMTP login and SMTP key shown in Brevo's SMTP & API settings, and verify the sender/domain in Brevo before sending. `MAIL_URL` is intentionally ignored so it cannot override the explicit SMTP settings. Local Mailpit settings are documented above. `MAIL_MAILER=log` does not send email.
 - **File storage:** learning attachments and goal images use the private `learning_private` disk and authorized application routes; they are not public assets. Configure persistent private storage or an appropriately protected object store for deployment. The `public` disk's storage symlink is for intentionally public files only.
 - **Admin bootstrap (optional):** set `ADMIN_PASSWORD` only in a local/deployment secret store before running the approved `AdminSeeder`. Never put the value in Git.
 

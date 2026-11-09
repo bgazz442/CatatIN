@@ -114,17 +114,19 @@ class AuthFeatureTest extends TestCase
         ]);
     }
 
-    public function test_login_form_is_empty_and_uses_browser_password_autofill_tokens(): void
+    public function test_login_form_is_empty_and_disables_browser_autofill(): void
     {
         $user = User::factory()->create();
 
         $response = $this->get(route('login'));
 
         $response->assertOk();
-        $response->assertSee('autocomplete="username"', false);
-        $response->assertSee('autocomplete="current-password"', false);
-        $response->assertSee('autocomplete="on"', false);
+        $response->assertSee('<form method="POST" action="'.route('login.store').'" autocomplete="off">', false);
         $response->assertSee('id="login-email" type="email" name="email" value=""', false);
+        $response->assertSee('name="email" value="" class="form-control', false);
+        $response->assertSee('id="login-password" type="password" name="password" value="" class="form-control', false);
+        $response->assertSee('autocomplete="off" readonly required', false);
+        $response->assertSee("input.addEventListener('focus', () => input.removeAttribute('readonly')", false);
         $response->assertDontSee($user->email);
     }
 

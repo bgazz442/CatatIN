@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Contracts\Notifications\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 class PasswordResetFeatureTest extends TestCase
@@ -37,7 +40,7 @@ class PasswordResetFeatureTest extends TestCase
             ->assertSessionHas('status', 'Mode array tidak mengirim email. Jika alamat terdaftar, pesan reset hanya tersedia sementara selama aplikasi berjalan.');
 
         $token = null;
-        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user, &$token): bool {
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function (ResetPassword $notification) use ($user, &$token): bool {
             $token = $notification->token;
             $resetUrl = route('password.reset', [
                 'token' => $notification->token,
@@ -53,6 +56,28 @@ class PasswordResetFeatureTest extends TestCase
         $this->assertTrue(Hash::check($token, $storedToken));
     }
 
+    public function test_reset_email_url_uses_app_url_instead_of_the_request_host(): void
+    {
+        Notification::fake();
+        config(['app.url' => 'https://catatin.example.test']);
+        $user = User::factory()->create();
+
+        $this->post('http://untrusted.example.test/forgot-password', ['email' => $user->email])
+            ->assertRedirect();
+
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function (ResetPassword $notification) use ($user): bool {
+            $url = $notification->toMail($user)->actionUrl;
+
+            return str_starts_with($url, 'https://catatin.example.test/reset-password/')
+                && str_contains($url, 'email='.urlencode($user->email));
+        });
+    }
+
+    public function test_smtp_mailer_uses_explicit_settings_without_a_mail_url_override(): void
+    {
+        $this->assertArrayNotHasKey('url', config('mail.mailers.smtp'));
+    }
+
     public function test_unknown_email_receives_the_same_generic_confirmation(): void
     {
         Notification::fake();
@@ -65,6 +90,58 @@ class PasswordResetFeatureTest extends TestCase
             ->assertSessionHas('status', 'Mode log tidak mengirim email. Jika alamat terdaftar, tautan reset dicatat ke storage/logs/laravel.log untuk pengujian lokal.');
 
         Notification::assertNothingSent();
+    }
+
+    public function test_smtp_response_is_generic_for_unknown_and_throttled_accounts(): void
+    {
+        Notification::fake();
+        config(['mail.default' => 'smtp']);
+        $user = User::factory()->create();
+        $message = 'Permintaan reset telah diterima. Jika alamat terdaftar, tautan akan muncul di Mailpit bila SMTP lokal aktif. Jika tidak ada email, periksa Mailpit dan konfigurasi SMTP.';
+
+        $this->post(route('password.email'), ['email' => $user->email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('status', $message);
+
+        $this->post(route('password.email'), ['email' => $user->email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('status', $message);
+
+        $this->post(route('password.email'), ['email' => 'unknown@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('status', $message);
+    }
+
+    public function test_smtp_failure_does_not_expose_account_existence_or_leave_a_reset_token(): void
+    {
+        config(['mail.default' => 'smtp']);
+        $dispatcher = \Mockery::mock(Dispatcher::class);
+        $dispatcher->shouldReceive('send')
+            ->once()
+            ->andThrow(new TransportException('SMTP unavailable'));
+        $this->app->instance(Dispatcher::class, $dispatcher);
+        $user = User::factory()->create();
+        $message = 'Permintaan reset telah diterima. Jika alamat terdaftar, tautan akan muncul di Mailpit bila SMTP lokal aktif. Jika tidak ada email, periksa Mailpit dan konfigurasi SMTP.';
+
+        $response = $this->post(route('password.email'), ['email' => $user->email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('status', $message);
+
+        $response->assertDontSee('SMTP unavailable');
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
+    }
+
+    public function test_password_reset_request_route_is_rate_limited(): void
+    {
+        Notification::fake();
+
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            $this->post(route('password.email'), ['email' => 'unknown@example.com'])
+                ->assertRedirect(route('password.request'));
+        }
+
+        $this->post(route('password.email'), ['email' => 'unknown@example.com'])
+            ->assertTooManyRequests();
     }
 
     public function test_log_mailer_does_not_claim_that_a_reset_email_was_sent(): void
@@ -108,7 +185,7 @@ class PasswordResetFeatureTest extends TestCase
         $this->post(route('password.email'), ['email' => $user->email])
             ->assertRedirect(route('password.request'))
             ->assertSessionHas('status', 'Mode log tidak mengirim email. Jika alamat terdaftar, tautan reset dicatat ke storage/logs/laravel.log untuk pengujian lokal.');
-        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use (&$token): bool {
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function (ResetPassword $notification) use (&$token): bool {
             $token = $notification->token;
 
             return true;
@@ -117,7 +194,13 @@ class PasswordResetFeatureTest extends TestCase
         $this->assertIsString($token);
         $this->get(route('password.reset', ['token' => $token, 'email' => $user->email]))
             ->assertOk()
-            ->assertSee('Buat password baru');
+            ->assertSee('Buat password baru')
+            ->assertSee('Minimal 10 karakter')
+            ->assertSee('Sedikitnya satu huruf besar')
+            ->assertSee('Sedikitnya satu huruf kecil')
+            ->assertSee('Sedikitnya satu angka')
+            ->assertSee('Sedikitnya satu simbol khusus')
+            ->assertSee('password baru ini akan menggantikan password lama');
 
         $this->post(route('password.update', ['token' => $token]), [
             'token' => $token,
@@ -185,7 +268,7 @@ class PasswordResetFeatureTest extends TestCase
 
         $this->post(route('password.email'), ['email' => $user->email]);
         $token = null;
-        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use (&$token): bool {
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function (ResetPassword $notification) use (&$token): bool {
             $token = $notification->token;
 
             return true;
@@ -210,7 +293,7 @@ class PasswordResetFeatureTest extends TestCase
         $token = null;
 
         $this->post(route('password.email'), ['email' => $user->email]);
-        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use (&$token): bool {
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function (ResetPassword $notification) use (&$token): bool {
             $token = $notification->token;
 
             return true;
@@ -252,7 +335,7 @@ class PasswordResetFeatureTest extends TestCase
         $token = null;
 
         $this->post(route('password.email'), ['email' => $user->email]);
-        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use (&$token): bool {
+        Notification::assertSentTo($user, ResetPasswordNotification::class, function (ResetPassword $notification) use (&$token): bool {
             $token = $notification->token;
 
             return true;
