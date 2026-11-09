@@ -13,7 +13,7 @@
     };
 @endphp
 
-<div class="group bg-white rounded-2xl border border-slate-200/80 p-5 flex flex-col justify-between transition-all duration-200 hover:shadow-soft-hover hover:border-[#2F6F64]/40 relative">
+<article class="note-card group relative flex flex-col justify-between p-5 transition-all duration-200">
     <div>
         <!-- Top Row: Category Badge & Favorit Toggle -->
         <div class="flex items-center justify-between gap-2 mb-3">
@@ -31,10 +31,10 @@
                     <i data-lucide="star" class="w-4 h-4 {{ $catatan->favorit ? 'fill-amber-400 text-amber-500' : '' }}"></i>
                 </button>
             </form>
-        </div>
+        </article>
 
         <!-- Note Title -->
-        <h3 class="text-base font-bold text-slate-900 group-hover:text-[#2F6F64] transition-colors line-clamp-2 mb-2 leading-snug">
+        <h3 class="text-base font-bold text-slate-900 group-hover:text-[var(--theme-accent)] transition-colors line-clamp-2 mb-2 leading-snug">
             <a href="{{ route('catatan.show', $catatan->id) }}">
                 {{ $catatan->judul }}
             </a>
@@ -48,15 +48,15 @@
 
     <!-- Bottom Meta & Actions -->
     <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-        <div class="flex items-center gap-1.5 text-slate-600">
-            <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-600"></i>
+        <div class="flex items-center gap-1.5 text-slate-500">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
             <span>{{ $catatan->updated_at ? $catatan->updated_at->format('d M Y') : $catatan->created_at->format('d M Y') }}</span>
         </div>
 
         <div class="flex items-center gap-1">
             <!-- View Detail -->
-            <a href="{{ route('catatan.show', $catatan->id) }}" 
-               class="p-1.5 text-slate-500 hover:text-[#2F6F64] hover:bg-slate-100 rounded-lg transition" 
+            <a href="{{ route('catatan.show', $catatan->id) }}"
+               class="p-1.5 text-slate-500 hover:text-[var(--theme-accent)] hover:bg-slate-100 rounded-lg transition"
                title="Lihat Detail">
                 <i data-lucide="eye" class="w-4 h-4"></i>
             </a>

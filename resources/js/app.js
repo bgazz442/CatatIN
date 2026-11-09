@@ -1,6 +1,7 @@
 import './bootstrap';
 import {
     Accessibility,
+    Activity,
     AlertCircle,
     ArrowUp,
     ArrowUpRight,
@@ -9,8 +10,10 @@ import {
     BookMarked,
     BookOpen,
     BookOpenCheck,
+    Bot,
     Calendar,
     Check,
+    ChevronDown,
     CircleCheck,
     CircleDashed,
     CheckCircle2,
@@ -38,6 +41,7 @@ import {
     LogIn,
     LogOut,
     Menu,
+    MessageSquare,
     NotebookTabs,
     Palette,
     PanelLeft,
@@ -48,6 +52,7 @@ import {
     RotateCcw,
     Save,
     Search,
+    Send,
     Settings2,
     Sparkles,
     Square,
@@ -61,6 +66,7 @@ import {
 
 const icons = {
     Accessibility,
+    Activity,
     AlertCircle,
     ArrowUp,
     ArrowUpRight,
@@ -69,8 +75,10 @@ const icons = {
     BookMarked,
     BookOpen,
     BookOpenCheck,
+    Bot,
     Calendar,
     Check,
+    ChevronDown,
     CircleCheck,
     CircleDashed,
     CheckCircle2,
@@ -97,6 +105,7 @@ const icons = {
     LogIn,
     LogOut,
     Menu,
+    MessageSquare,
     NotebookTabs,
     Palette,
     PanelLeft,
@@ -107,6 +116,7 @@ const icons = {
     RotateCcw,
     Save,
     Search,
+    Send,
     Settings2,
     Sparkles,
     Square,
@@ -121,16 +131,22 @@ const icons = {
 const settingsKey = 'catatin-ui-settings';
 const accountId = document.documentElement.dataset.accountId || 'guest';
 const accountSettingsKey = `${settingsKey}:${accountId}`;
+const pendingThemeKey = `${settingsKey}:pending:${accountId}`;
 const defaultSettings = { accent: '#2F6F64', navigationFooter: '#1F2937', reduceMotion: false };
 
 function readSettings() {
     try {
         const stored = JSON.parse(localStorage.getItem(accountSettingsKey) || '{}');
+        const pending = JSON.parse(localStorage.getItem(pendingThemeKey) || 'null');
         return {
             ...defaultSettings,
             ...stored,
-            accent: document.documentElement.dataset.themeAccent || stored.accent || defaultSettings.accent,
-            navigationFooter: document.documentElement.dataset.themeNavSurface || stored.navigationFooter || defaultSettings.navigationFooter,
+            accent: accountId === 'guest'
+                ? stored.accent || document.documentElement.dataset.themeAccent || defaultSettings.accent
+                : pending?.accent || document.documentElement.dataset.themeAccent || stored.accent || defaultSettings.accent,
+            navigationFooter: accountId === 'guest'
+                ? stored.navigationFooter || document.documentElement.dataset.themeNavSurface || defaultSettings.navigationFooter
+                : pending?.navigationFooter || document.documentElement.dataset.themeNavSurface || stored.navigationFooter || defaultSettings.navigationFooter,
         };
     } catch {
         return {
@@ -138,6 +154,67 @@ function readSettings() {
             accent: document.documentElement.dataset.themeAccent || defaultSettings.accent,
             navigationFooter: document.documentElement.dataset.themeNavSurface || defaultSettings.navigationFooter,
         };
+    }
+}
+
+let themeSaveQueue = Promise.resolve();
+const queueThemePreferenceSave = (settings) => {
+    const root = document.documentElement;
+    const url = root.dataset.themeSaveUrl;
+    if (!url || accountId === 'guest') return Promise.resolve(null);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const body = new URLSearchParams({
+        _token: csrfToken,
+        accent_color: settings.accent,
+        navigation_footer_color: settings.navigationFooter,
+    });
+
+    themeSaveQueue = themeSaveQueue.catch(() => null).then(async () => {
+        const response = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            keepalive: true,
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body,
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            const validationMessage = Object.values(result.errors || {}).flat()[0];
+            throw new Error(validationMessage || result.message || 'Warna belum berhasil disimpan.');
+        }
+
+        return result;
+    });
+
+    return themeSaveQueue;
+};
+
+const clearSavedThemeQueue = (settings) => {
+    try {
+        const pending = JSON.parse(localStorage.getItem(pendingThemeKey) || 'null');
+        if (pending?.accent === settings.accent && pending?.navigationFooter === settings.navigationFooter) {
+            localStorage.removeItem(pendingThemeKey);
+        }
+    } catch {
+        // The server save has succeeded; unavailable local storage does not affect it.
+    }
+};
+
+if (accountId !== 'guest') {
+    try {
+        const pending = JSON.parse(localStorage.getItem(pendingThemeKey) || 'null');
+        if (pending?.accent && pending?.navigationFooter) {
+            queueThemePreferenceSave(pending)
+                .then(() => clearSavedThemeQueue(pending))
+                .catch(() => {});
+        }
+    } catch {
+        // Invalid pending data is ignored; the persisted account theme remains authoritative.
     }
 }
 
@@ -283,12 +360,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const remaining = panel.querySelector('[data-goal-remaining]');
         if (progressBar) progressBar.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
         if (progressLabel) progressLabel.textContent = `${percentage.toFixed(1)}% tercapai`;
-        if (progressValue) progressValue.textContent = `${Number(data.current_value).toFixed(2)} / ${Number(data.target_value).toFixed(2)} ${data.unit}`;
-        if (remaining) remaining.textContent = `Sisa ${Number(data.remaining).toFixed(2)} ${data.unit}`;
+        if (progressValue) progressValue.textContent = `${data.formatted_current_value} / ${data.formatted_target_value}`;
+        if (remaining) remaining.textContent = data.remaining_label;
         const quickRemaining = panel.querySelector('[data-goal-quick-remaining]');
-        if (quickRemaining) quickRemaining.textContent = `Sisa target: ${Number(data.remaining).toFixed(2)} ${data.unit}`;
+        if (quickRemaining) quickRemaining.textContent = `Sisa target: ${data.remaining_label}`;
         const status = panel.querySelector('[data-goal-status]');
-        if (status) status.textContent = data.status === 'completed' ? 'Tuntas' : 'Aktif';
+        if (status) {
+            status.textContent = data.status === 'completed' ? 'Tuntas' : 'Aktif';
+            status.classList.toggle('bg-emerald-50', data.status === 'completed');
+            status.classList.toggle('text-emerald-800', data.status === 'completed');
+            status.classList.toggle('border', data.status === 'completed');
+            status.classList.toggle('border-emerald-200', data.status === 'completed');
+            status.classList.toggle('bg-slate-100', data.status !== 'completed');
+            status.classList.toggle('text-slate-700', data.status !== 'completed');
+        }
+        const progressCount = panel.querySelector('[data-goal-progress-count]');
+        if (progressCount && data.progress_entry) {
+            const count = Number(progressCount.dataset.count || progressCount.textContent.match(/\d+/)?.[0] || 0) + 1;
+            progressCount.dataset.count = String(count);
+            progressCount.textContent = `${count} catatan progres`;
+        }
 
         const entries = panel.querySelector('[data-goal-progress-entries]');
         const entry = data.progress_entry;
@@ -298,7 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const details = document.createElement('div');
             const amount = document.createElement('p');
             amount.className = 'font-semibold text-slate-800';
-            amount.textContent = `+${Number(entry.amount).toFixed(2)} ${data.unit}`;
+            const signedAmount = Number(entry.amount);
+            amount.textContent = entry.label || `${signedAmount < 0 ? '−' : '+'}${Math.abs(signedAmount).toFixed(2)} ${data.unit}`;
             details.append(amount);
             if (entry.note) {
                 const note = document.createElement('p');
@@ -340,9 +432,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const token = form.querySelector('input[name="_token"]')?.value
                 || document.querySelector('meta[name="csrf-token"]')?.content;
+            const formData = new FormData(form);
+            const direction = event.submitter?.dataset.progressDirection;
+            if (form.dataset.ajaxGoalProgress === 'true' && direction) {
+                formData.set('direction', direction);
+            }
             const response = await fetch(form.action, {
                 method: (form.method || 'POST').toUpperCase(),
-                body: new FormData(form),
+                body: formData,
                 credentials: 'same-origin',
                 headers: {
                     Accept: 'application/json',
@@ -374,6 +471,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             confirmedMessage = payload.message;
+            if (form.dataset.ajaxRedirect === 'true') {
+                if (typeof payload.redirect_url !== 'string') {
+                    showAjaxToast('error', 'Data berhasil disimpan, tetapi tujuan halaman tidak tersedia.');
+                    return;
+                }
+                let redirectUrl;
+                try {
+                    redirectUrl = new URL(payload.redirect_url, window.location.origin);
+                } catch {
+                    showAjaxToast('error', 'Tujuan navigasi tidak valid.');
+                    return;
+                }
+                if (redirectUrl.origin !== window.location.origin) {
+                    showAjaxToast('error', 'Tujuan navigasi tidak valid.');
+                    return;
+                }
+                showAjaxToast('success', payload.message);
+                window.location.assign(redirectUrl.toString());
+                return;
+            }
             if (payload.data && typeof payload.data === 'object') {
                 const formValues = {
                     title: payload.data.title,
@@ -701,22 +818,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const updateTheme = (accent, navigationFooter = settings.navigationFooter) => {
+    const updateTheme = (accent, navigationFooter = settings.navigationFooter, saveDelay = 0) => {
         settings = { ...settings, accent, navigationFooter };
         saveSettings(settings);
         updateControls();
-        if (status) status.textContent = 'Pratinjau diterapkan. Simpan perubahan agar palet tersimpan pada akun Anda.';
+        if (themeForm?.dataset.authenticated !== 'true') {
+            if (status) status.textContent = 'Warna diterapkan di browser ini. Masuk untuk menyimpannya pada akun Anda.';
+            return;
+        }
+
+        try {
+            localStorage.setItem(pendingThemeKey, JSON.stringify({
+                accent: settings.accent,
+                navigationFooter: settings.navigationFooter,
+            }));
+        } catch {
+            // The chosen theme remains active until the page is closed.
+        }
+        if (status) status.textContent = 'Menyimpan warna pilihan Anda...';
+        window.clearTimeout(themeSaveTimer);
+        themeSaveTimer = window.setTimeout(saveThemePreference, saveDelay);
     };
 
+    let themeSaveTimer;
+    const saveThemePreference = async () => {
+        if (!themeForm || themeForm.dataset.authenticated !== 'true') return;
+
+        try {
+            const result = await queueThemePreferenceSave(settings);
+            clearSavedThemeQueue(settings);
+            if (status) status.textContent = result.message || 'Warna tampilan tersimpan pada akun Anda.';
+        } catch (error) {
+            if (status) status.textContent = `${error.message} Pilihan tetap aktif di halaman ini; coba simpan lagi.`;
+        }
+    };
+
+    window.addEventListener('pagehide', () => {
+        if (themeSaveTimer) {
+            window.clearTimeout(themeSaveTimer);
+            saveThemePreference();
+        }
+    });
     swatches.forEach((swatch) => {
         swatch.addEventListener('click', () => updateTheme(swatch.dataset.themeColor));
     });
 
-    colorInput.addEventListener('input', (event) => updateTheme(event.target.value));
+    colorInput.addEventListener('input', (event) => updateTheme(event.target.value, settings.navigationFooter, 250));
     navigationFooterSwatches.forEach((swatch) => {
         swatch.addEventListener('click', () => updateTheme(settings.accent, swatch.dataset.navigationFooterColor));
     });
-    navigationFooterInput.addEventListener('input', (event) => updateTheme(settings.accent, event.target.value));
+    navigationFooterInput.addEventListener('input', (event) => updateTheme(settings.accent, event.target.value, 250));
     motionToggle.addEventListener('change', () => {
         settings = { ...settings, reduceMotion: motionToggle.checked };
         saveSettings(settings);
@@ -725,13 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('reset-theme')?.addEventListener('click', () => {
         settings = { ...defaultSettings, reduceMotion: settings.reduceMotion };
-        saveSettings(settings);
-        updateControls();
-        if (themeForm?.dataset.authenticated === 'true') {
-            themeForm.requestSubmit();
-        } else if (status) {
-            status.textContent = 'Pratinjau dikembalikan. Masuk untuk menyimpan perubahan pada akun Anda.';
-        }
+        updateTheme(settings.accent, settings.navigationFooter);
     });
 
     updateControls();

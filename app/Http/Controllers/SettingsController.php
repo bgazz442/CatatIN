@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UserPreference;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -20,7 +21,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updateTheme(Request $request): RedirectResponse
+    public function updateTheme(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'accent_color' => [
@@ -48,7 +49,35 @@ class SettingsController extends Controller
             $validated
         );
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Warna tampilan berhasil disimpan untuk akun Anda.',
+                'preferences' => $validated,
+            ]);
+        }
+
         return redirect()->route('settings')->with('success', 'Warna tampilan berhasil disimpan untuk akun Anda.');
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'return_to' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        $request->user()->update(['name' => trim($validated['name'])]);
+
+        $returnTo = $validated['return_to'] ?? '';
+        $returnPath = is_string($returnTo) ? parse_url($returnTo) : false;
+        $safeReturnTo = is_array($returnPath)
+            && ! isset($returnPath['host'])
+            && str_starts_with($returnPath['path'] ?? '', '/')
+            && ! str_starts_with($returnPath['path'] ?? '', '//')
+                ? $returnTo
+                : route('settings', absolute: false);
+
+        return redirect()->to($safeReturnTo)->with('success', 'Nama profil berhasil diperbarui.');
     }
 
     private function contrastRatio(string $firstColor, string $secondColor): float

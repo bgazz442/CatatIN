@@ -83,6 +83,23 @@ class AiQueryBenchmarkTest extends TestCase
             'English retired feature' => ['Show my daily activities', '', '', 'retired_feature'],
             'Unknown unsupported procedure' => ['How do I access another users account?', '', '', 'privacy_boundary'],
             'English database fact count' => ['What is the number of tasks in my account?', '', '', 'productivity'],
+            'Broad mathematics question' => ['2 + 2 = ?', '', '', 'general'],
+            'Broad writing request' => ['Tolong bantu saya menulis email lamaran kerja', '', '', 'general'],
+            'Programming debugging request' => ['Why does this JavaScript promise reject?', '', '', 'general'],
+            'Typo general question' => ['Gmna cara kerja database index?', '', '', 'general'],
+            'Informal general question' => ['knp langit warnanya biru?', '', '', 'general'],
+            'Short technical term' => ['PHP?', '', '', 'general'],
+            'Broad brainstorming request' => ['Kasih ide proyek sederhana buat belajar coding', '', '', 'general'],
+            'General knowledge without question prefix' => ['Fotosintesis pada tumbuhan', '', '', 'general'],
+            'General comparison request' => ['Bandingkan REST dan GraphQL', '', '', 'general'],
+            'Reasoning scenario' => ['Saya punya waktu 30 menit dan 3 tugas, bagaimana membaginya?', '', '', 'general'],
+            'Conversation context why follow-up' => ['Kenapa?', 'USER: Jelaskan cara kerja database index.', 'USER: Jelaskan cara kerja database index.', 'follow_up'],
+            'Conversation context continuation' => ['Lalu?', 'USER: Apa perbedaan PHP dan JavaScript?', '', 'follow_up'],
+            'Unknown CatatIn feature' => ['Bagaimana fitur pembayaran berlangganan di CatatIn?', '', '', 'unsupported'],
+            'Unknown current weather' => ['Cuaca hari ini di Jakarta bagaimana?', '', '', 'unsupported'],
+            'Current temperature request' => ['Berapa suhu dan prakiraan cuaca Jakarta saat ini?', '', '', 'unsupported'],
+            'Ambiguous short follow-up without history' => ['Itu gimana?', '', '', 'ambiguous'],
+            'Current stock data' => ['Berapa harga saham Microsoft saat ini?', '', '', 'unsupported'],
         ];
     }
 }

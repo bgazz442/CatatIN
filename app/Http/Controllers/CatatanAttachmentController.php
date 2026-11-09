@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\CatatanAttachment;
-use App\Services\AI\LearningMaterialIndexer;
 use App\Services\AttachmentManager;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -27,8 +26,6 @@ class CatatanAttachmentController extends Controller
     {
         $this->assertOwner($attachment);
         $catatanId = $attachment->catatan_id;
-        app(LearningMaterialIndexer::class)
-            ->forgetMaterial((int) $attachment->catatan->user_id, 'lampiran', (int) $attachment->id);
         $manager->deleteAttachment($attachment);
         $attachment->delete();
 

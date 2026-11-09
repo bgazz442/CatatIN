@@ -41,7 +41,8 @@ class AjaxCrudFeatureTest extends TestCase
             ->assertJsonPath('message', 'Tugas berhasil ditambahkan.')
             ->assertJsonPath('data.title', 'Create ajax task')
             ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.category_id', $category->id);
+            ->assertJsonPath('data.category_id', $category->id)
+            ->assertJsonPath('redirect_url', route('tasks.index'));
         $task = Task::query()->findOrFail($created->json('data.id'));
         $this->assertSame($user->id, $task->user_id);
 
@@ -78,7 +79,8 @@ class AjaxCrudFeatureTest extends TestCase
             'start_date' => today()->toDateString(),
         ])->assertCreated()
             ->assertJsonPath('data.current_value', 0)
-            ->assertJsonPath('data.status', 'active');
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('redirect_url', route('goals.show', Goal::query()->latest('id')->first()));
         $goal = Goal::query()->findOrFail($created->json('data.id'));
 
         $this->withHeaders($this->ajaxHeaders())->put(route('goals.update', $goal), [
@@ -100,6 +102,201 @@ class AjaxCrudFeatureTest extends TestCase
             ->assertJsonPath('data.progress_entry.note', 'First half');
         $this->assertSame('5.50', $goal->fresh()->current_value);
         $this->assertSame(1, GoalProgressEntry::query()->where('goal_id', $goal->id)->count());
+
+        $this->withHeaders($this->ajaxHeaders())->post(route('goals.progress.store', $goal), [
+            'amount' => '2.25',
+            'direction' => 'subtract',
+            'note' => 'Penyesuaian',
+        ])->assertOk()
+            ->assertJsonPath('message', 'Progres berhasil dikurangi dari target.')
+            ->assertJsonPath('data.current_value', 3.25)
+            ->assertJsonPath('data.progress_entry.amount', '-2.25');
+        $this->assertSame('3.25', $goal->fresh()->current_value);
+        $this->assertDatabaseHas('goal_progress_entries', [
+            'goal_id' => $goal->id,
+            'amount' => '-2.25',
+            'note' => 'Penyesuaian',
+        ]);
+
+        $this->withHeaders($this->ajaxHeaders())->post(route('goals.progress.store', $goal), [
+            'amount' => '4',
+            'direction' => 'subtract',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['amount']);
+        $this->assertSame('3.25', $goal->fresh()->current_value);
+    }
+
+    public function test_goal_list_quick_progress_actions_use_the_saved_step_in_both_directions(): void
+    {
+        $user = User::factory()->create();
+        $goal = Goal::query()->create([
+            'user_id' => $user->id,
+            'name' => 'Stepped goal',
+            'target_value' => 10,
+            'current_value' => 0,
+            'progress_step' => 2.5,
+            'unit' => 'pages',
+            'start_date' => today(),
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('goals.index'))
+            ->assertOk()
+            ->assertSee('Per klik:', false)
+            ->assertSee('name="use_progress_step" value="1"', false)
+            ->assertSee(route('goals.destroy', $goal), false);
+
+        $this->withHeaders($this->ajaxHeaders())->post(route('goals.progress.store', $goal), [
+            'use_progress_step' => '1',
+            'direction' => 'add',
+        ])->assertOk()
+            ->assertJsonPath('data.current_value', 2.5);
+        $this->assertSame('2.50', $goal->fresh()->current_value);
+
+        $this->withHeaders($this->ajaxHeaders())->post(route('goals.progress.store', $goal), [
+            'use_progress_step' => '1',
+            'direction' => 'subtract',
+        ])->assertOk()
+            ->assertJsonPath('data.current_value', 0);
+        $this->assertSame('0.00', $goal->fresh()->current_value);
+    }
+
+    public function test_goal_edit_form_exposes_delete_action_and_goal_progress_form_has_add_and_subtract_controls(): void
+    {
+        $user = User::factory()->create();
+        $goal = Goal::query()->create([
+            'user_id' => $user->id,
+            'name' => 'Editable goal',
+            'target_value' => 10,
+            'current_value' => 2,
+            'unit' => 'pages',
+            'start_date' => today(),
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('goals.edit', $goal))
+            ->assertOk()
+            ->assertSee('data-ajax-redirect="true"', false)
+            ->assertSee('Hapus Target')
+            ->assertSee(route('goals.destroy', $goal), false);
+
+        $this->get(route('goals.show', $goal))
+            ->assertOk()
+            ->assertSee('data-ajax-goal-progress="true"', false)
+            ->assertSee('data-progress-direction="add"', false)
+            ->assertSee('data-progress-direction="subtract"', false);
+
+        $this->withHeaders($this->ajaxHeaders())->delete(route('goals.destroy', $goal))
+            ->assertOk()
+            ->assertJsonPath('data.id', $goal->id);
+        $this->assertDatabaseMissing('goals', ['id' => $goal->id]);
+    }
+
+    public function test_task_and_goal_create_forms_enable_navigation_after_successful_ajax_submit(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('tasks.create'))
+            ->assertOk()
+            ->assertSee('data-ajax-redirect="true"', false);
+
+        $this->get(route('goals.create'))
+            ->assertOk()
+            ->assertSee('data-ajax-redirect="true"', false)
+            ->assertSee('name="goal_type" value="money"', false)
+            ->assertSee('name="goal_type" value="percentage"', false)
+            ->assertSee('goal-type-illustration-money', false)
+            ->assertSee('goal-type-illustration-percentage', false)
+            ->assertSee('name="progress_step"', false);
+    }
+
+    public function test_goal_tracker_shows_remaining_progress_as_percentage_and_amount(): void
+    {
+        $user = User::factory()->create();
+        $goal = Goal::query()->create([
+            'user_id' => $user->id,
+            'name' => 'Five units',
+            'target_value' => 5,
+            'current_value' => 0,
+            'unit' => '10',
+            'start_date' => today(),
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('goals.show', $goal))
+            ->assertOk()
+            ->assertSee('100,0% tersisa (5,00 10)')
+            ->assertSee('Sisa target: 100,0% tersisa (5,00 10)');
+
+        $this->get(route('goals.index'))
+            ->assertOk()
+            ->assertSee('100,0% tersisa (5,00 10)');
+    }
+
+    public function test_goal_tracker_supports_rupiah_and_percentage_goal_types(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->withHeaders($this->ajaxHeaders());
+
+        $moneyResponse = $this->post(route('goals.store'), [
+            'name' => 'Emergency fund',
+            'goal_type' => 'money',
+            'target_value' => '1500000',
+            'start_date' => today()->toDateString(),
+        ])->assertCreated()
+            ->assertJsonPath('data.goal_type', 'money')
+            ->assertJsonPath('data.unit', 'Rupiah')
+            ->assertJsonPath('data.formatted_target_value', 'Rp 1.500.000');
+        $moneyGoal = Goal::query()->findOrFail($moneyResponse->json('data.id'));
+
+        $this->post(route('goals.progress.store', $moneyGoal), [
+            'amount' => '250000',
+            'note' => 'Setoran pertama',
+        ])->assertOk()
+            ->assertJsonPath('data.formatted_current_value', 'Rp 250.000')
+            ->assertJsonPath('data.formatted_remaining_value', 'Rp 1.250.000')
+            ->assertJsonPath('data.remaining_label', 'Sisa Rp 1.250.000 (83,3% lagi)')
+            ->assertJsonPath('data.progress_entry.label', '+Rp 250.000');
+
+        $this->post(route('goals.progress.store', $moneyGoal), [
+            'amount' => '250000.50',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['amount']);
+
+        $percentageResponse = $this->post(route('goals.store'), [
+            'name' => 'Complete course',
+            'goal_type' => 'percentage',
+            'target_value' => '100',
+            'start_date' => today()->toDateString(),
+        ])->assertCreated()
+            ->assertJsonPath('data.goal_type', 'percentage')
+            ->assertJsonPath('data.unit', '%')
+            ->assertJsonPath('data.formatted_target_value', '100%');
+        $percentageGoal = Goal::query()->findOrFail($percentageResponse->json('data.id'));
+
+        $this->post(route('goals.progress.store', $percentageGoal), [
+            'amount' => '42.5',
+        ])->assertOk()
+            ->assertJsonPath('data.formatted_current_value', '42,5%')
+            ->assertJsonPath('data.remaining_label', 'Sisa 57,5% lagi')
+            ->assertJsonPath('data.progress_entry.label', '+42,5%');
+
+        $this->post(route('goals.progress.store', $percentageGoal), [
+            'amount' => '60',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['amount']);
+
+        $this->get(route('goals.show', $moneyGoal))
+            ->assertOk()
+            ->assertSee('Rp 1.500.000')
+            ->assertSee('Sisa Rp 1.250.000 (83,3% lagi)');
+        $this->get(route('goals.show', $percentageGoal))
+            ->assertOk()
+            ->assertSee('Sisa 57,5% lagi');
     }
 
     public function test_note_ajax_create_update_and_delete_return_saved_note_data(): void

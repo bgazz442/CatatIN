@@ -186,7 +186,7 @@ class LearningMaterialRetriever
                     ->all();
             }
         }
-        $selected = array_slice($ranked, 0, 12);
+        $selected = array_slice($ranked, 0, 6);
 
         return [
             'context' => "Hasil retrieval berikut dibatasi pada sumber terpilih dan bukan seluruh daftar catatan atau lampiran.\n\n"

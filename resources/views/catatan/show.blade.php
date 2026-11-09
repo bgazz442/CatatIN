@@ -29,7 +29,7 @@
     </nav>
 
     <!-- Main Content Card -->
-    <article class="bg-white rounded-2xl border border-slate-200/80 p-6 md:p-8 shadow-soft">
+    <article class="note-detail-article bg-white rounded-2xl border border-slate-200/80 p-6 md:p-8">
         
         <!-- Header Info -->
         <div class="pb-6 border-b border-slate-100">
@@ -71,7 +71,7 @@
 
         <!-- Note Body Content (Safely Escaped Text) -->
         @if(filled($catatan->isi))
-        <div class="py-8 prose prose-slate max-w-none text-slate-800 text-sm md:text-base leading-relaxed whitespace-pre-line font-normal selection:bg-[#2F6F64]/20">
+        <div class="py-8 prose prose-slate max-w-none text-slate-800 text-sm md:text-base leading-relaxed whitespace-pre-line font-normal selection:bg-[var(--theme-accent)]/20">
 {!! nl2br(e($catatan->isi)) !!}
         </div>
         @endif

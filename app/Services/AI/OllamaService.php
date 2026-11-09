@@ -129,6 +129,9 @@ class OllamaService
                 'options' => [
                     'temperature' => config('ollama.temperature', 0.2),
                     'top_p' => config('ollama.top_p', 0.8),
+                    'num_ctx' => config('ollama.context_length', 8192),
+                    'num_predict' => config('ollama.max_output_tokens', 1024),
+                    'repeat_penalty' => config('ollama.repeat_penalty', 1.1),
                 ],
             ]);
 

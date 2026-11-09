@@ -1,13 +1,28 @@
+@php
+    $themeAccent = auth()->user()?->themePreference?->accent_color ?? '#2F6F64';
+    $themeNavSurface = auth()->user()?->themePreference?->navigation_footer_color ?? '#1F2937';
+    $themeAccent = preg_match('/^#[\da-fA-F]{6}$/', $themeAccent) ? $themeAccent : '#2F6F64';
+    $themeNavSurface = preg_match('/^#[\da-fA-F]{6}$/', $themeNavSurface) ? $themeNavSurface : '#1F2937';
+    $themeAccentChannels = array_map('hexdec', str_split(substr($themeAccent, 1), 2));
+    $themeAccentHover = array_map(fn ($channel) => (int) round($channel * .78), $themeAccentChannels);
+    $themeAccentLight = array_map(fn ($channel) => (int) round($channel + (255 - $channel) * .28), $themeAccentChannels);
+@endphp
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-slate-50" data-account-id="{{ auth()->id() }}" data-theme-accent="{{ $themeAccent }}" data-theme-nav-surface="{{ $themeNavSurface }}" data-theme-save-url="{{ auth()->check() ? route('settings.theme.update') : '' }}" style="--theme-accent: {{ $themeAccent }}; --theme-accent-rgb: {{ implode(', ', $themeAccentChannels) }}; --theme-accent-hover: rgb({{ implode(', ', $themeAccentHover) }}); --theme-accent-light: rgb({{ implode(', ', $themeAccentLight) }}); --theme-nav-surface: {{ $themeNavSurface }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin') - CatatIn</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
     @php
         $adminNavigation = [
             ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'icon' => 'M3 10.5 12 3l9 7.5M5.25 9v11.25h13.5V9M9 20.25v-6h6v6'],
@@ -16,22 +31,22 @@
         ];
     @endphp
     <div class="min-h-screen lg:flex">
-        <aside class="hidden w-72 shrink-0 flex-col bg-slate-950 text-white lg:flex">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 border-b border-white/10 px-7 py-7">
-                <span class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500 text-xl font-black text-white shadow-lg shadow-emerald-950/30">C</span>
+        <aside class="theme-nav-surface admin-theme-sidebar hidden w-72 shrink-0 flex-col text-white lg:flex border-r border-white/10">
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 border-b border-white/10 px-7 py-6">
+                <span class="grid h-10 w-10 place-items-center rounded-xl theme-gradient text-lg font-black text-white shadow-md">C</span>
                 <span>
-                    <span class="block text-lg font-bold tracking-tight">CatatIn</span>
-                    <span class="mt-0.5 block text-[11px] font-semibold uppercase tracking-[.2em] text-emerald-300">Admin Console</span>
+                    <span class="block text-lg font-bold tracking-tight">Catat<span class="text-[#2F6F64]">In</span></span>
+                    <span class="mt-0.5 block text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-300">Admin Console</span>
                 </span>
             </a>
 
-            <div class="px-5 pt-8">
-                <p class="px-3 text-[10px] font-bold uppercase tracking-[.2em] text-slate-500">Menu utama</p>
+            <div class="px-5 pt-7">
+                <p class="px-3 text-[10px] font-bold uppercase tracking-[.2em] text-slate-400">Menu utama</p>
                 <nav aria-label="Navigasi admin" class="mt-3 space-y-1.5">
                     @foreach($adminNavigation as $item)
                         @php($active = request()->routeIs($item['route']) || ($item['route'] === 'admin.users.index' && request()->routeIs('admin.users.show')))
                         <a href="{{ route($item['route']) }}" @if($active) aria-current="page" @endif
-                           class="group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition {{ $active ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-950/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                           class="group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition {{ $active ? 'admin-theme-active-nav font-semibold' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                             <svg class="h-5 w-5 shrink-0 {{ $active ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="{{ $item['icon'] }}"/>
                             </svg>
@@ -43,9 +58,9 @@
             </div>
 
             <div class="mt-auto p-5">
-                <div class="rounded-2xl border border-white/10 bg-white/[.06] p-4">
+                <div class="rounded-2xl border border-white/10 bg-white/[.06] p-4 backdrop-blur-xs">
                     <div class="flex items-center gap-3">
-                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-400/15 text-sm font-bold text-emerald-200">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl theme-gradient text-sm font-bold text-white shadow-sm">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
                         <span class="min-w-0">
                             <span class="block truncate text-sm font-semibold text-white">{{ auth()->user()->name }}</span>
                             <span class="mt-0.5 block text-xs text-slate-400">Administrator</span>
@@ -59,7 +74,7 @@
                         </button>
                     </form>
                 </div>
-                <p class="mt-5 text-center text-[11px] text-slate-600">CatatIn Admin · Panel pengelolaan</p>
+                <p class="mt-5 text-center text-[11px] text-slate-400">CatatIn Admin · Panel pengelolaan</p>
             </div>
         </aside>
 
@@ -67,14 +82,14 @@
             <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
                 <div class="flex min-h-[72px] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
                     <div class="flex min-w-0 items-center gap-3">
-                        <a href="{{ route('admin.dashboard') }}" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-950 font-bold text-white lg:hidden">C</a>
+                        <a href="{{ route('admin.dashboard') }}" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl theme-gradient font-bold text-white lg:hidden">C</a>
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold text-slate-900">@yield('title', 'Dashboard Admin')</p>
+                            <p class="truncate text-base font-bold text-slate-900 tracking-tight">@yield('title', 'Dashboard Admin')</p>
                             <p class="hidden text-xs text-slate-500 sm:block">Kelola CatatIn dengan mudah dan aman</p>
                         </div>
                     </div>
                     <div class="hidden items-center gap-3 sm:flex">
-                        <span class="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 text-sm font-bold text-emerald-800">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
+                        <span class="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-sm font-bold text-slate-800 border border-slate-200">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
                         <div class="max-w-52">
                             <p class="truncate text-sm font-semibold text-slate-800">{{ auth()->user()->name }}</p>
                             <p class="truncate text-xs text-slate-500">{{ auth()->user()->email }}</p>
@@ -84,11 +99,11 @@
                 <nav aria-label="Navigasi admin mobile" class="flex gap-2 overflow-x-auto border-t border-slate-100 px-4 py-2.5 lg:hidden">
                     @foreach($adminNavigation as $item)
                         @php($active = request()->routeIs($item['route']) || ($item['route'] === 'admin.users.index' && request()->routeIs('admin.users.show')))
-                        <a href="{{ route($item['route']) }}" @if($active) aria-current="page" @endif class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold {{ $active ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-100' }}">{{ $item['label'] }}</a>
+                        <a href="{{ route($item['route']) }}" @if($active) aria-current="page" @endif class="shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition {{ $active ? 'admin-theme-active-nav font-bold' : 'text-slate-600 hover:bg-slate-100' }}">{{ $item['label'] }}</a>
                     @endforeach
                     <form method="POST" action="{{ route('logout') }}" class="shrink-0">
                         @csrf
-                        <button class="rounded-lg px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">Keluar</button>
+                        <button class="rounded-xl px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">Keluar</button>
                     </form>
                 </nav>
             </header>

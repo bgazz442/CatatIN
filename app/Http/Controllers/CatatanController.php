@@ -6,7 +6,6 @@ use App\Models\Catatan;
 use App\Models\Category;
 use App\Models\Goal;
 use App\Models\Task;
-use App\Services\AI\LearningMaterialIndexer;
 use App\Services\AttachmentManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -239,10 +238,6 @@ class CatatanController extends Controller
 
         try {
             DB::transaction(function () use ($catatan, $validated, $files, &$storedPaths) {
-                if ($catatan->user_id) {
-                    app(LearningMaterialIndexer::class)
-                        ->forgetMaterial((int) $catatan->user_id, 'catatan', (int) $catatan->id);
-                }
                 $catatan->update($validated);
                 if ($files !== []) {
                     $storedPaths = app(AttachmentManager::class)->store($catatan, $files);
@@ -287,13 +282,6 @@ class CatatanController extends Controller
         }
 
         DB::transaction(function () use ($catatan, $attachments) {
-            if ($catatan->user_id) {
-                $indexer = app(LearningMaterialIndexer::class);
-                $indexer->forgetMaterial((int) $catatan->user_id, 'catatan', (int) $catatan->id);
-                foreach ($attachments as $attachment) {
-                    $indexer->forgetMaterial((int) $catatan->user_id, 'lampiran', (int) $attachment->id);
-                }
-            }
             $catatan->delete();
         });
         foreach ($attachments as $attachment) {

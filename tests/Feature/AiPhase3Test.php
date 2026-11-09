@@ -86,7 +86,7 @@ class AiPhase3Test extends TestCase
             }
 
             return Http::response(
-                json_encode(['response' => 'Konten file belum dapat dibaca jika transkripsi atau teks tidak tersedia.', 'done' => true])."\n"
+                json_encode(['response' => 'Isi PDF dan video belum tersedia dalam sumber CatatIn bila konten belum diekstrak.', 'done' => true])."\n"
             );
         });
 

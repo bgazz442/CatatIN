@@ -170,6 +170,10 @@ class AuthFeatureTest extends TestCase
             ->assertDontSee('Daily Activity')
             ->assertSee('Goal Tracker')
             ->assertSee('CatatIn Assistant')
+            ->assertDontSee('Catatan Belajar')
+            ->assertDontSee('Catatan Favorit')
+            ->assertDontSee('Media Favorit')
+            ->assertDontSee('Kategori')
             ->assertDontSee('Personal Notes');
     }
 
@@ -196,7 +200,7 @@ class AuthFeatureTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('https://example.com/avatar.jpg', false);
-        $response->assertSee('Profil Ayu Belajar', false);
+        $response->assertSee('Info akun dan ubah nama', false);
         $response->assertDontSee('>Masuk</a>', false);
     }
 

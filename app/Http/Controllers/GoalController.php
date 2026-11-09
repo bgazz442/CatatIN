@@ -115,7 +115,7 @@ class GoalController extends Controller
     public function update(Request $request, Goal $goal): RedirectResponse|JsonResponse
     {
         $this->assertOwner($request, $goal);
-        $validated = $this->validated($request);
+        $validated = $this->validated($request, $goal);
         $image = $validated['image'] ?? null;
         unset($validated['image']);
         $validated['status'] = (float) $goal->current_value >= (float) $validated['target_value']
@@ -157,9 +157,19 @@ class GoalController extends Controller
     public function addProgress(Request $request, Goal $goal): RedirectResponse|JsonResponse
     {
         $this->assertOwner($request, $goal);
+        if ($request->boolean('use_progress_step')) {
+            $request->merge(['amount' => $goal->progress_step]);
+        }
+        $request->merge(['direction' => $request->input('direction', 'add')]);
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
+            'amount' => [
+                'required',
+                'numeric',
+                'gt:0',
+                $goal->goal_type === 'money' ? 'decimal:0,0' : 'decimal:0,2',
+            ],
             'note' => ['nullable', 'string', 'max:500'],
+            'direction' => ['required', 'in:add,subtract'],
         ]);
 
         $progressEntry = DB::transaction(function () use ($request, $goal, $validated) {
@@ -169,12 +179,26 @@ class GoalController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
             $currentCents = (int) round((float) $lockedGoal->current_value * 100);
-            $addedCents = (int) round((float) $validated['amount'] * 100);
-            $nextValue = number_format(($currentCents + $addedCents) / 100, 2, '.', '');
+            $amountCents = (int) round((float) $validated['amount'] * 100);
+            $signedCents = $validated['direction'] === 'subtract' ? -$amountCents : $amountCents;
+            $nextCents = $currentCents + $signedCents;
+
+            if ($nextCents < 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'amount' => 'Jumlah pengurangan tidak boleh melebihi progres saat ini.',
+                ]);
+            }
+            if ($lockedGoal->goal_type === 'percentage' && $nextCents > (int) round((float) $lockedGoal->target_value * 100)) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Progres persentase tidak boleh melebihi nilai target.',
+                ]);
+            }
+
+            $nextValue = number_format($nextCents / 100, 2, '.', '');
 
             $entry = $lockedGoal->progressEntries()->create([
                 'user_id' => $request->user()->id,
-                'amount' => $validated['amount'],
+                'amount' => number_format($signedCents / 100, 2, '.', ''),
                 'note' => $validated['note'] ?? null,
                 'recorded_at' => now(),
             ]);
@@ -190,11 +214,14 @@ class GoalController extends Controller
             $goal->refresh();
 
             return response()->json([
-                'message' => 'Progres berhasil ditambahkan ke riwayat target.',
+                'message' => $validated['direction'] === 'subtract'
+                    ? 'Progres berhasil dikurangi dari target.'
+                    : 'Progres berhasil ditambahkan ke riwayat target.',
                 'data' => [
                     ...$this->goalData($goal),
                     'progress_entry' => [
                         'amount' => $progressEntry->amount,
+                        'label' => $goal->formattedProgressEntry($progressEntry->amount),
                         'note' => $progressEntry->note,
                         'recorded_at' => $progressEntry->recorded_at->format('d M Y H:i'),
                     ],
@@ -202,7 +229,12 @@ class GoalController extends Controller
             ]);
         }
 
-        return redirect()->route('goals.show', $goal)->with('success', 'Progres berhasil ditambahkan ke riwayat target.');
+        return redirect()->route('goals.show', $goal)->with(
+            'success',
+            $validated['direction'] === 'subtract'
+                ? 'Progres berhasil dikurangi dari target.'
+                : 'Progres berhasil ditambahkan ke riwayat target.'
+        );
     }
 
     public function destroy(Request $request, Goal $goal): RedirectResponse|JsonResponse
@@ -226,10 +258,16 @@ class GoalController extends Controller
         return [
             'id' => $goal->id,
             'name' => $goal->name,
+            'goal_type' => $goal->goal_type,
             'description' => $goal->description,
             'current_value' => (float) $goal->current_value,
             'target_value' => (float) $goal->target_value,
+            'progress_step' => (float) $goal->progress_step,
             'unit' => $goal->unit,
+            'formatted_current_value' => $goal->formattedValue($goal->current_value),
+            'formatted_target_value' => $goal->formattedValue($goal->target_value),
+            'formatted_remaining_value' => $goal->formattedValue($goal->remaining()),
+            'remaining_label' => $goal->remainingLabel(),
             'start_date' => $goal->start_date?->format('Y-m-d'),
             'deadline' => $goal->deadline?->format('Y-m-d'),
             'status' => $goal->status,
@@ -239,15 +277,29 @@ class GoalController extends Controller
         ];
     }
 
-    private function validated(Request $request): array
+    private function validated(Request $request, ?Goal $goal = null): array
     {
         $request->merge(['name' => trim((string) $request->input('name'))]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', new AlphanumericTitle],
+            'goal_type' => ['sometimes', 'in:money,percentage'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'target_value' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
-            'unit' => ['required', 'string', 'max:40'],
+            'target_value' => [
+                'required',
+                'numeric',
+                'gt:0',
+                ($goal?->goal_type ?? $request->input('goal_type')) === 'money' ? 'decimal:0,0' : 'decimal:0,2',
+                ...(($goal?->goal_type ?? $request->input('goal_type')) === 'percentage' ? ['lte:100'] : []),
+            ],
+            'progress_step' => [
+                'sometimes',
+                'numeric',
+                'gt:0',
+                ($goal?->goal_type ?? $request->input('goal_type')) === 'money' ? 'decimal:0,0' : 'decimal:0,2',
+                'lte:target_value',
+            ],
+            'unit' => ['nullable', 'string', 'max:40'],
             'start_date' => ['required', 'date'],
             'deadline' => ['nullable', 'date', 'after_or_equal:start_date'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:max_width=4096,max_height=4096'],
@@ -259,6 +311,23 @@ class GoalController extends Controller
                 'current_value' => 'Progres awal ditambahkan melalui riwayat progres target.',
             ]);
         }
+
+        $goalType = $goal?->goal_type ?? $validated['goal_type'] ?? 'custom';
+        if ($goalType === 'money') {
+            $validated['unit'] = 'Rupiah';
+        } elseif ($goalType === 'percentage') {
+            $validated['unit'] = '%';
+        } elseif (blank($validated['unit'] ?? null)) {
+            throw ValidationException::withMessages([
+                'unit' => 'Satuan wajib diisi untuk target dengan satuan khusus.',
+            ]);
+        }
+
+        $validated['goal_type'] = $goalType;
+        $validated['progress_step'] = min(
+            (float) ($validated['progress_step'] ?? $goal?->progress_step ?? 1),
+            (float) $validated['target_value'],
+        );
 
         return $validated;
     }

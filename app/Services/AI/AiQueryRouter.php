@@ -47,6 +47,18 @@ class AiQueryRouter
             return $this->result('greeting', ['greeting'], 'greeting');
         }
 
+        if (preg_match('/^(itu gimana|itu bagaimana|gimana itu|bagaimana dengan itu|terus itu|lalu itu|what about that|how so|kenapa|mengapa|kok|why)[?!.]*$/iu', $compact) === 1) {
+            if (trim($history.$summary) === '') {
+                return $this->result('ambiguous', [], 'ambiguous');
+            }
+
+            $topicIntent = $this->inferTopicIntent($history."\n".$summary);
+
+            return $topicIntent === null
+                ? $this->result('ambiguous', [], 'follow-up-clarification')
+                : $this->result('follow_up', [$topicIntent], 'follow-up');
+        }
+
         if (preg_match('/^(terima kasih|makasih|mksih|thanks?|thank you|oke(?:\s+|,\s*)sip|ok(?:ey)?(?:\s+sip)?|siap)[!?.\s]*$/iu', $compact) === 1
             || preg_match('/^(terima kasih|makasih|mksih)\b/iu', $compact) === 1) {
             return $this->result('acknowledgment', ['acknowledgment'], 'acknowledgment');
@@ -89,6 +101,9 @@ class AiQueryRouter
             'catatan saya', 'catatan saya yang', 'catatan belajar saya',
             'rangkum catatan', 'coba rangkum catatan', 'ringkas catatan',
             'materi saya', 'materi yang saya pelajari', 'materi yang dipelajari',
+            'apa yang saya pelajari', 'yang saya pelajari tentang',
+            'materi yang saya simpan', 'apa yang saya simpan', 'yang pernah saya catat',
+            'apa yang saya catat', 'catatan yang saya buat',
             'jelaskan materi', 'lampiran saya', 'dokumen saya',
             'buat soal latihan', 'soal latihan dari', 'materi ini',
             'my notes', 'my materials', 'materials i saved', 'summarize my notes',
@@ -96,7 +111,9 @@ class AiQueryRouter
             'explain the note', 'compare my notes', 'make flashcards from my notes',
             'create a quiz from my notes', 'favorite media', 'favorite videos', 'saved media',
             'videos i saved', 'media favorit', 'video favorit', 'catatan kategori',
-            'notes in category', 'notes under category',
+            'notes in category', 'notes under category', 'what did i learn',
+            'what did i save', 'what did i write down', 'my study materials',
+            'in my notes', 'from my notes',
         ]) || (Str::contains($compact, ['perulangan', 'algoritma'])
             && preg_match('/^(apa itu|definisi|what is|what s|define)\b/iu', $compact) !== 1);
         if ($explicitLearning) {
@@ -113,6 +130,8 @@ class AiQueryRouter
             'minggu ini',
             'goal saya', 'goal gw', 'target saya', 'progres saya',
             'progres goal', 'progress saya', 'deadline', 'sisa target',
+            'kemajuan target', 'perkembangan target', 'pencapaian goal',
+            'apa yang harus saya prioritaskan', 'prioritas tugas',
             'nama tugas', 'nama task', 'deskripsi tugas', 'deskripsi task',
             'status tugas saya', 'status task saya',
             'my tasks', 'my task', 'unfinished tasks', 'incomplete tasks',
@@ -125,7 +144,8 @@ class AiQueryRouter
             return $this->result('productivity', ['productivity'], 'productivity');
         }
 
-        $followUp = preg_match('/^(jelaskan lebih detail|jelaskan lebih lanjut|berikan contoh|beri contoh|bagaimana caranya|bagaimana cara melakukannya|buat contohnya|lanjutkan|jelaskan bagian|jelaskan lagi|explain more|give an example|continue|elaborate|what about that)\b/iu', $compact) === 1
+        $followUp = preg_match('/^(jelaskan lebih detail|jelaskan lebih lanjut|berikan contoh|beri contoh|bagaimana caranya|bagaimana cara melakukannya|buat contohnya|lanjutkan|jelaskan bagian|jelaskan lagi|explain more|give an example|continue|elaborate|what about that|apa maksudnya|maksudnya|kenapa begitu|mengapa begitu|kok begitu|how so|then what)\b/iu', $compact) === 1
+            || preg_match('/^(kenapa|mengapa|kok|why|lalu|terus)(?:\s+(begitu|so|then))?[?!.]*$/iu', $compact) === 1
             || preg_match('/^(jelaskan|jelaskan|rangkum|ringkas|buat soal|contoh)\b/iu', $compact) === 1
                 && ! Str::contains($compact, [
                     'catatan saya', 'catatan belajar', 'materi saya', 'lampiran saya',
@@ -151,7 +171,7 @@ class AiQueryRouter
             'bagaimana progres saya',
             'apa yang harus saya lakukan',
             'apa yang harus dilakukan',
-        ]) || mb_strlen($compact) < 4) {
+        ]) || $compact === '') {
             return $this->result('ambiguous', [], 'ambiguous');
         }
 
@@ -162,7 +182,7 @@ class AiQueryRouter
             'bagaimana cara buat task', 'bagaimana cara buat tugas',
             'cara menggunakan goal', 'goal tracker', 'catatan belajar', 'pengaturan',
             'registrasi', 'daftar akun', 'login', 'masuk', 'logout',
-            'catatin ai', 'bagaimana cara', 'cara menggunakan', 'validasi',
+            'catatin ai', 'validasi',
             'aturan bisnis', 'fitur yang tidak tersedia', 'fitur tersedia',
             'apa saja fitur', 'fitur catatin', 'data yang bisa kamu akses',
             'data yang dapat kamu akses', 'troubleshooting',
@@ -180,11 +200,28 @@ class AiQueryRouter
         }
 
         if (preg_match('/^(bagaimana progres saya|bagaimana progres saya\?|apa yang harus saya lakukan|apa yang harus dilakukan|bagaimana progress saya)\b/iu', $compact) === 1
-            || mb_strlen($compact) < 4) {
+            || $compact === '') {
             return $this->result('ambiguous', [], 'ambiguous');
         }
 
-        return $this->result('unsupported', [], 'unsupported');
+        if (Str::contains($compact, [
+            'saham saat ini', 'harga saham', 'kurs saat ini', 'nilai tukar saat ini',
+            'cuaca hari ini', 'berita terbaru', 'latest news', 'current stock price',
+            'current weather', 'exchange rate today',
+        ]) || (
+            Str::contains($compact, ['cuaca', 'prakiraan cuaca', 'suhu', 'weather', 'temperature', 'harga', 'price', 'kurs', 'nilai tukar', 'saham', 'stock', 'berita', 'news'])
+            && Str::contains($compact, ['saat ini', 'sekarang', 'hari ini', 'terkini', 'real time', 'real-time', 'today', 'right now', 'currently'])
+        )) {
+            return $this->result('unsupported', [], 'live-data-unavailable');
+        }
+
+        if (
+            Str::contains($compact, ['catatin']) && Str::contains($compact, ['fitur', 'pembayaran', 'berlangganan'])
+        ) {
+            return $this->result('unsupported', [], 'undocumented-website-feature');
+        }
+
+        return $this->result('general', [], 'general-knowledge');
     }
 
     private function normalizeAliases(string $text): string
@@ -200,11 +237,26 @@ class AiQueryRouter
             '/\baja\b/u' => 'saja',
             '/\bprograming\b/u' => 'programming',
             '/\bjavascrip\b/u' => 'javascript',
+            '/\bcra\b/u' => 'cara',
             '/\bjs\b/u' => 'javascript',
             '/\btugasnya\b/u' => 'tugas saya',
             '/\bjelasin\b/u' => 'jelaskan',
             '/\bbljr\b/u' => 'belajar',
             '/\bmakasi\b/u' => 'makasih',
+            '/\bknp\b/u' => 'kenapa',
+            '/\bklo\b/u' => 'kalau',
+            '/\bkalo\b/u' => 'kalau',
+            '/\btrs\b/u' => 'terus',
+            '/\budh\b/u' => 'sudah',
+            '/\bnggak\b/u' => 'tidak',
+            '/\benggak\b/u' => 'tidak',
+            '/\bgak\b/u' => 'tidak',
+            '/\bga\b/u' => 'tidak',
+            '/\btdk\b/u' => 'tidak',
+            '/\byg\b/u' => 'yang',
+            '/\bdgn\b/u' => 'dengan',
+            '/\butk\b/u' => 'untuk',
+            '/\bbgt\b/u' => 'banget',
         ];
 
         foreach ($replacements as $pattern => $replacement) {
@@ -230,7 +282,7 @@ class AiQueryRouter
             return 'productivity';
         }
 
-        return null;
+        return trim($context) !== '' ? 'general' : null;
     }
 
     private function result(string $primaryIntent, array $intents, string $reason): array

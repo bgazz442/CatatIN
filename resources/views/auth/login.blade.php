@@ -37,20 +37,20 @@
             place-items: center;
             padding: 28px 16px;
             color: var(--ink);
-            background-color: #edf2ef;
-            background-image: linear-gradient(135deg, rgba(255,255,255,.82), rgba(232,240,235,.78));
+            background-color: #f3f5f2;
+            background-image: radial-gradient(ellipse at 12% 18%, rgba(47,111,100,.10), transparent 34rem), linear-gradient(145deg, #f8faf8, #e9efeb);
             font-family: "Segoe UI", Arial, sans-serif;
         }
 
         .auth-card {
-            width: min(100%, 980px);
+            width: min(100%, 1080px);
             display: grid;
             grid-template-columns: .88fr 1.12fr;
             overflow: hidden;
             background: #fff;
-            border: 1px solid rgba(36,75,69,.09);
-            border-radius: 18px;
-            box-shadow: 0 24px 70px rgba(29,48,45,.13);
+            border: 1px solid rgba(36,75,69,.08);
+            border-radius: 28px;
+            box-shadow: 0 32px 90px rgba(29,48,45,.12);
         }
 
         .brand-panel {
@@ -58,18 +58,20 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 620px;
-            padding: 42px;
+            min-height: 680px;
+            padding: 52px;
             overflow: hidden;
             color: #fff;
-            background: linear-gradient(148deg, var(--theme-accent-hover) 0%, var(--theme-accent) 100%);
+            background:
+                radial-gradient(circle at 82% 18%, rgba(255,255,255,.14), transparent 16rem),
+                linear-gradient(148deg, var(--theme-accent-hover) 0%, var(--theme-accent) 68%, var(--theme-accent-light, #568276) 100%);
         }
 
         .brand-panel::after {
             position: absolute;
             right: -80px;
             bottom: 76px;
-            width: 360px;
+            width: 430px;
             height: 1px;
             content: "";
             transform: rotate(-42deg);
@@ -89,25 +91,25 @@
             font-weight: 700;
         }
 
-        .brand-name { font-size: 20px; font-weight: 700; letter-spacing: 0; }
-        .brand-copy { position: relative; z-index: 1; max-width: 330px; }
-        .brand-copy .eyebrow { color: #c9ddd5; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; }
-        .brand-copy h1 { margin: 14px 0; font-size: clamp(30px, 3vw, 39px); line-height: 1.14; font-weight: 650; }
+        .brand-name { font-size: 21px; font-weight: 700; letter-spacing: -.03em; }
+        .brand-copy { position: relative; z-index: 1; max-width: 360px; }
+        .brand-copy .eyebrow { color: #d3e2dc; font-size: 10px; font-weight: 750; letter-spacing: 1.8px; }
+        .brand-copy h1 { margin: 14px 0; font-size: clamp(34px, 3.5vw, 46px); line-height: 1.08; font-weight: 650; letter-spacing: -.04em; }
         .brand-copy p, .brand-foot { color: rgba(255,255,255,.76); font-size: 14px; line-height: 1.7; }
         .brand-foot { position: relative; z-index: 1; margin: 0; font-size: 12px; }
 
-        .form-panel { padding: 42px 48px; background: var(--paper); }
-        .form-panel h2 { margin: 0; font-size: 25px; font-weight: 700; letter-spacing: 0; }
-        .form-intro { margin: 7px 0 24px; color: var(--muted); font-size: 14px; }
+        .form-panel { display: flex; flex-direction: column; justify-content: center; padding: 54px 60px; background: var(--paper); }
+        .form-panel h2 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.04em; }
+        .form-intro { margin: 8px 0 28px; color: var(--muted); font-size: 14px; }
 
         .google-button {
-            min-height: 48px;
+            min-height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             border: 1px solid #d6dfdb;
-            border-radius: 9px;
+            border-radius: 12px;
             color: var(--ink);
             background: #fff;
             font-size: 14px;
@@ -120,17 +122,17 @@
         .google-button .bi-google { color: #4285f4; font-size: 17px; }
         .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: #87958f; font-size: 11px; }
         .divider::before, .divider::after { height: 1px; flex: 1; content: ""; background: var(--line); }
-        .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 20px; border-radius: 9px; background: #edf2ef; }
-        .auth-tabs .nav-link { border-radius: 7px; color: #64746e; font-size: 13px; font-weight: 650; }
+        .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 22px; border-radius: 12px; background: #e9efeb; }
+        .auth-tabs .nav-link { min-height: 40px; border-radius: 9px; color: #64746e; font-size: 13px; font-weight: 650; }
         .auth-tabs .nav-link.active { color: var(--pine); background: #fff; box-shadow: 0 1px 3px rgba(29,48,45,.1); }
         .form-label { margin-bottom: 6px; color: #344742; font-size: 12px; font-weight: 650; }
-        .form-control { min-height: 44px; border-color: #dce5e0; border-radius: 8px; font-size: 14px; }
+        .form-control { min-height: 48px; border-color: #dce5e0; border-radius: 11px; font-size: 14px; }
         .form-control:focus { border-color: #6b9b8e; box-shadow: 0 0 0 .2rem rgba(57,118,107,.13); }
         .password-toggle { min-width: 46px; border-color: #dce5e0; color: #64746e; background: #fff; }
         .password-toggle:hover, .password-toggle:focus { border-color: #6b9b8e; color: var(--pine); background: #f7faf8; }
         .form-check-input:checked { border-color: var(--teal); background-color: var(--teal); }
         .form-check-label { color: #64746e; font-size: 12px; }
-        .submit-button { min-height: 46px; border: 0; border-radius: 8px; color: #fff; background: var(--pine); font-size: 14px; font-weight: 650; }
+        .submit-button { min-height: 49px; border: 0; border-radius: 11px; color: #fff; background: var(--pine); font-size: 14px; font-weight: 650; }
         .submit-button:hover { color: #fff; background: var(--teal-dark); }
         .new-user-note { margin: 17px 0 0; padding: 12px 13px; border-left: 3px solid #c18b4a; border-radius: 0 7px 7px 0; color: #66746f; background: #f5f4ee; font-size: 12px; line-height: 1.55; }
         .alert { border-radius: 8px; font-size: 13px; }
@@ -142,14 +144,14 @@
 
         @media (max-width: 767.98px) {
             body { padding: 16px 12px; }
-            .auth-card { max-width: 510px; grid-template-columns: 1fr; border-radius: 14px; }
-            .brand-panel { min-height: auto; gap: 24px; padding: 22px 24px; }
-            .brand-copy h1 { margin: 9px 0 6px; font-size: 25px; }
+            .auth-card { max-width: 540px; grid-template-columns: 1fr; border-radius: 22px; }
+            .brand-panel { min-height: auto; gap: 24px; padding: 24px 26px; }
+            .brand-copy h1 { margin: 9px 0 6px; font-size: 26px; }
             .brand-copy p, .brand-foot { display: none; }
             .brand-copy .eyebrow { font-size: 10px; }
             .brand-mark { width: 38px; height: 38px; }
-            .form-panel { padding: 28px 24px 30px; }
-            .form-panel h2 { font-size: 22px; }
+            .form-panel { padding: 30px 26px 34px; }
+            .form-panel h2 { font-size: 24px; }
         }
     </style>
 </head>

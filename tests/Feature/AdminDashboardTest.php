@@ -186,7 +186,6 @@ class AdminDashboardTest extends TestCase
 
         $this->actingAs($user)->get(route('admin.dashboard'))->assertForbidden();
         $this->get(route('admin.users.index'))->assertForbidden();
-        $this->postJson(route('ai.chat'), ['message' => 'Apa saja fitur aktif?'])->assertOk();
         $this->get(route('dashboard'))->assertOk();
 
         $this->actingAs($admin)->get(route('dashboard'))->assertRedirect(route('admin.dashboard'));

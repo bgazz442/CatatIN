@@ -14,8 +14,8 @@
                         <i data-lucide="sparkles" class="h-5 w-5"></i>
                     </div>
                     <div class="min-w-0">
-                        <p class="truncate text-sm font-bold text-slate-900">CatatIn Assistant</p>
-                        <p class="text-[11px] text-slate-500">Asisten pribadi</p>
+                        <p class="truncate text-[15px] font-bold text-slate-900">CatatIn Assistant</p>
+                            <p class="text-[13px] text-slate-500">Asisten pribadi</p>
                     </div>
                 </div>
                 <button id="chat-sidebar-close" type="button" class="chat-icon-button lg:hidden" aria-label="Tutup riwayat">
@@ -70,17 +70,7 @@
 
             <div class="chat-account">
                 @auth
-                    <div class="chat-account-avatar">
-                        @if(auth()->user()->avatar)
-                            <img src="{{ auth()->user()->avatar }}" alt="">
-                        @else
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                        @endif
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-semibold text-slate-800">{{ auth()->user()->name }}</p>
-                        <p class="truncate text-[11px] text-slate-500">{{ auth()->user()->email }}</p>
-                    </div>
+                    @include('components.account-menu', ['accountMenuContext' => 'chat'])
                     <a href="{{ route('settings') }}" class="chat-icon-button" aria-label="Pengaturan chatbot">
                         <i data-lucide="settings-2" class="h-4 w-4"></i>
                     </a>
@@ -100,14 +90,25 @@
                         <i data-lucide="menu" class="h-4 w-4"></i>
                     </button>
                     <div class="min-w-0">
-                        <p class="truncate text-sm font-semibold text-slate-800">Apa yang ingin kamu rencanakan?</p>
-                        <p id="chat-status-label" class="text-[11px] text-slate-500">Siap membantu</p>
+                        <p class="truncate text-[15px] font-semibold text-slate-800">Apa yang ingin kamu rencanakan?</p>
+                        <p id="chat-status-label" class="text-[13px] text-slate-500">Siap membantu</p>
                     </div>
                 </div>
-                <button id="stop-generation" type="button" class="chat-stop-button hidden">
-                    <i data-lucide="square" class="h-3.5 w-3.5"></i>
-                    Hentikan
-                </button>
+                <div class="flex shrink-0 items-center gap-2">
+                    <details class="chat-navigation">
+                        <summary class="chat-navigation-trigger">
+                            <i data-lucide="menu" class="h-4 w-4"></i>
+                            <span>Menu lainnya</span>
+                            <i data-lucide="chevron-down" class="chat-navigation-chevron h-3.5 w-3.5"></i>
+                        </summary>
+                        <nav class="chat-navigation-menu" aria-label="Navigasi CatatIn">
+                            <a href="{{ route('dashboard') }}"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+                            <a href="{{ route('tasks.index') }}"><i data-lucide="list-checks"></i><span>Task Manager</span></a>
+                            <a href="{{ route('goals.index') }}"><i data-lucide="target"></i><span>Goal Tracker</span></a>
+                            <a href="{{ route('settings') }}"><i data-lucide="settings-2"></i><span>Profil dan Pengaturan</span></a>
+                        </nav>
+                    </details>
+                </div>
             </header>
 
             <div id="chat-messages" class="chat-messages" aria-live="polite">
@@ -115,8 +116,8 @@
                     <div class="chat-welcome-mark">
                         <i data-lucide="sparkles" class="h-6 w-6"></i>
                     </div>
-                    <h2>Selamat datang di CatatIn Assistant</h2>
-                    <p>Asisten AI pribadi yang siap membantu kamu memahami catatan, mengelola tugas dan target, serta menjawab berbagai pertanyaan.</p>
+                    <h2>Ada yang bisa saya bantu?</h2>
+                    <p>Tanya apa saja, mulai dari belajar dan menulis hingga pemrograman. Saya juga bisa membantu berdasarkan catatan, tugas, dan target di akunmu.</p>
                     <div class="chat-prompt-grid">
                         <button type="button" class="quick-prompt" data-prompt="Bantu saya memahami materi pemrograman.">
                             <span>Bantu saya memahami materi pemrograman.</span>
@@ -163,7 +164,6 @@
     const chatMessages = document.getElementById('chat-messages');
     const conversationList = document.getElementById('conversation-list');
     const newChatButton = document.getElementById('new-chat');
-    const stopGenerationButton = document.getElementById('stop-generation');
     const conversationIdInput = document.getElementById('conversation_id');
     const submitChatButton = document.getElementById('submit-chat');
     const statusLabel = document.getElementById('chat-status-label');
@@ -298,8 +298,8 @@
         chatMessages.innerHTML = `
             <div class="chat-welcome">
                 <div class="chat-welcome-mark"><i data-lucide="sparkles" class="h-6 w-6"></i></div>
-                <h2>Selamat datang di CatatIn Assistant</h2>
-                <p>Asisten AI pribadi yang siap membantu kamu memahami catatan, mengelola tugas dan target, serta menjawab berbagai pertanyaan.</p>
+                <h2>Ada yang bisa saya bantu?</h2>
+                <p>Tanya apa saja, mulai dari belajar dan menulis hingga pemrograman. Saya juga bisa membantu berdasarkan catatan, tugas, dan target di akunmu.</p>
                 <div class="chat-prompt-grid">
                     <button type="button" class="quick-prompt" data-prompt="Bantu saya memahami materi pemrograman."><span>Bantu saya memahami materi pemrograman.</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
                     <button type="button" class="quick-prompt" data-prompt="Apa saja catatan belajar saya?"><span>Apa saja catatan belajar saya?</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
@@ -361,10 +361,21 @@
                 sources.forEach((source) => {
                     const link = document.createElement('a');
                     link.href = source.link || '#';
-                    link.textContent = source.title || 'Sumber';
+                    link.className = 'chat-source-card';
+                    const kind = document.createElement('span');
+                    kind.className = 'chat-source-kind';
+                    kind.textContent = source.type || 'Sumber';
+                    const title = document.createElement('span');
+                    title.className = 'chat-source-title';
+                    title.textContent = source.title || 'Sumber';
+                    const icon = document.createElement('i');
+                    icon.setAttribute('data-lucide', 'arrow-up-right');
+                    icon.className = 'h-4 w-4';
+                    link.append(kind, title, icon);
                     list.appendChild(link);
                 });
                 body.appendChild(sourcesWrapper);
+                if (window.lucide) window.lucide.createIcons();
             }
 
             const actions = document.createElement('div');
@@ -553,7 +564,6 @@
         submitChatButton.classList.add('is-loading');
         statusLabel.textContent = 'Sedang menghasilkan jawaban...';
         showThinking();
-        stopGenerationButton.classList.remove('hidden');
 
         activeAbortController = new AbortController();
         let partialMessage = null;
@@ -652,16 +662,9 @@
             chatInput.disabled = false;
             submitChatButton.disabled = false;
             submitChatButton.classList.remove('is-loading');
-            stopGenerationButton.classList.add('hidden');
             statusLabel.textContent = 'Siap membantu';
             chatInput.focus();
         }
-    });
-
-    stopGenerationButton.addEventListener('click', () => {
-        activeAbortController?.abort();
-        activeAbortController = null;
-        removeThinking();
     });
 
     chatInput.addEventListener('input', resizeChatInput);

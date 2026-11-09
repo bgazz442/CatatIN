@@ -6,9 +6,20 @@
 
 @section('content')
 <div class="space-y-6">
+    <section class="note-library-banner flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div class="max-w-2xl">
+            <p class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-amber-700"><i data-lucide="star" class="h-3.5 w-3.5 fill-amber-400"></i> Koleksi pilihan</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Materi penting, selalu dekat.</h2>
+            <p class="mt-2 max-w-xl text-sm leading-6 text-slate-600">Kumpulan catatan yang Anda tandai untuk dibuka kembali dengan cepat.</p>
+            <p class="mt-4 text-xs font-semibold text-slate-500">{{ number_format($catatan->total()) }} materi favorit</p>
+        </div>
+        <a href="{{ route('catatan.index') }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-[var(--theme-accent)]/40 hover:text-[var(--theme-accent)]">
+            <i data-lucide="notebook-tabs" class="h-4 w-4"></i><span>Jelajahi catatan</span>
+        </a>
+    </section>
 
     <!-- Filter & Search Controls -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-soft">
+    <div class="library-toolbar p-4 sm:p-5">
         <form method="GET" action="{{ route('catatan.favorit') }}" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
                 <!-- Search Input -->
@@ -20,13 +31,13 @@
                            name="search" 
                            value="{{ request('search') }}" 
                            placeholder="Cari dalam catatan favorit..." 
-                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition placeholder:text-slate-400">
+                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)] focus:border-transparent transition placeholder:text-slate-400">
                 </div>
 
                 <!-- Category Filter -->
                 <div class="md:col-span-3">
                     <select name="kategori" 
-                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition text-slate-700">
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)] focus:border-transparent transition text-slate-700">
                         <option value="">Semua Kategori</option>
                         @foreach($kategoriList as $kat)
                             <option value="{{ $kat }}" {{ request('kategori') == $kat ? 'selected' : '' }}>
@@ -39,7 +50,7 @@
                 <!-- Sort Order -->
                 <div class="md:col-span-3">
                     <select name="sort" 
-                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition text-slate-700">
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)] focus:border-transparent transition text-slate-700">
                         <option value="terbaru" {{ request('sort') != 'terlama' ? 'selected' : '' }}>Terbaru</option>
                         <option value="terlama" {{ request('sort') == 'terlama' ? 'selected' : '' }}>Terlama</option>
                     </select>
@@ -58,7 +69,7 @@
                             Reset Filter
                         </a>
                     @endif
-                    <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#2F6F64] text-white rounded-xl font-semibold hover:bg-[#24574F] transition shadow-xs">
+                    <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--theme-accent)] text-white rounded-xl font-semibold hover:bg-[var(--theme-accent-hover)] transition shadow-sm">
                         <i data-lucide="filter" class="w-3.5 h-3.5"></i>
                         <span>Terapkan</span>
                     </button>
@@ -69,7 +80,7 @@
 
     <!-- Notes Grid -->
     @if($catatan->count() > 0)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             @foreach($catatan as $item)
                 <x-card-catatan :catatan="$item" />
             @endforeach
@@ -94,7 +105,7 @@
                 @endif
             </p>
             <div class="flex items-center justify-center gap-3">
-                <a href="{{ route('catatan.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-[#2F6F64] text-white text-xs font-semibold rounded-xl hover:bg-[#24574F] transition shadow-xs">
+                <a href="{{ route('catatan.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-[var(--theme-accent)] text-white text-xs font-semibold rounded-xl hover:bg-[var(--theme-accent-hover)] transition shadow-sm">
                     <i data-lucide="notebook-tabs" class="w-4 h-4"></i>
                     <span>Jelajahi Semua Catatan</span>
                 </a>

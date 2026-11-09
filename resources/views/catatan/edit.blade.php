@@ -14,11 +14,11 @@
         <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
         <a href="{{ route('catatan.show', $catatan->id) }}" class="hover:text-slate-800 truncate max-w-xs">{{ $catatan->judul }}</a>
         <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
-        <span class="text-[#2F6F64] font-semibold">Edit</span>
+        <span class="text-[var(--theme-accent)] font-semibold">Edit</span>
     </nav>
 
     <!-- Card Form -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-6 md:p-8 shadow-soft">
+    <div class="note-form-panel bg-white rounded-2xl border border-slate-200/80 p-6 md:p-8">
         <div class="pb-5 mb-6 border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -52,7 +52,7 @@
                        maxlength="150"
                        value="{{ old('judul', $catatan->judul) }}"
                        placeholder="Contoh: Konfigurasi Virtual Host Apache & Nginx di Debian" 
-                       class="w-full px-4 py-2.5 bg-slate-50 border @error('judul') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition"
+                       class="w-full px-4 py-2.5 bg-slate-50 border @error('judul') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)] focus:border-transparent transition"
                        required>
                 @error('judul')
                     <p class="text-xs text-rose-600 mt-1.5 flex items-center gap-1">
@@ -69,7 +69,7 @@
                 </label>
                 <select name="kategori" 
                         id="kategori" 
-                        class="w-full px-4 py-2.5 bg-slate-50 border @error('kategori') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition text-slate-700"
+                        class="w-full px-4 py-2.5 bg-slate-50 border @error('kategori') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)] focus:border-transparent transition text-slate-700"
                         required>
                     <option value="" disabled>-- Pilih Kategori Mata Pelajaran --</option>
                     @foreach($kategoriList as $kat)
@@ -97,7 +97,7 @@
                           id="isi" 
                           rows="10" 
                           placeholder="Tuliskan ringkasan materi, baris kode, rumus, atau poin-poin penjelasan penting di sini..."
-                          class="w-full px-4 py-3 bg-slate-50 border @error('isi') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F64] focus:border-transparent transition leading-relaxed"
+                          class="w-full px-4 py-3 bg-slate-50 border @error('isi') border-rose-300 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)] focus:border-transparent transition leading-relaxed"
                           >{{ old('isi', $catatan->isi) }}</textarea>
                 @error('isi')
                     <p class="text-xs text-rose-600 mt-1.5 flex items-center gap-1">
@@ -114,7 +114,7 @@
                            name="favorit" 
                            value="1" 
                            {{ old('favorit', $catatan->favorit) ? 'checked' : '' }}
-                           class="w-4 h-4 text-[#2F6F64] bg-white border-slate-300 rounded focus:ring-[#2F6F64] focus:ring-2">
+                           class="w-4 h-4 text-[var(--theme-accent)] bg-white border-slate-300 rounded focus:ring-[var(--theme-accent)] focus:ring-2">
                     <div>
                         <span class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
                             <i data-lucide="star" class="w-4 h-4 text-amber-500 fill-amber-400"></i>
@@ -138,7 +138,7 @@
                     <a href="{{ route('catatan.show', $catatan->id) }}" class="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition">
                         Batal
                     </a>
-                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2F6F64] text-white text-sm font-semibold rounded-xl hover:bg-[#24574F] transition-all shadow-md shadow-[#2F6F64]/20">
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-[var(--theme-accent)] text-white text-sm font-semibold rounded-xl hover:bg-[var(--theme-accent-hover)] transition-all shadow-sm shadow-[var(--theme-accent)]/20">
                         <i data-lucide="check" class="w-4 h-4"></i>
                         <span>Simpan Perubahan</span>
                     </button>

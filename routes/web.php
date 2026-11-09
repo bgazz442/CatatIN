@@ -60,8 +60,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
 });
 
-// --- CATATIN AI ---
 Route::middleware(['auth', 'user'])->group(function () {
+    Route::put('/pengaturan/profil', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
     Route::post('/pengaturan/tampilan', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
 
     Route::get('/ai', [AiController::class, 'index'])->name('ai.index');
