@@ -211,7 +211,7 @@
                         <input type="hidden" name="_form" value="login">
                         <div class="mb-3">
                             <label for="login-email" class="form-label">Email</label>
-                            <input id="login-email" type="email" name="email" value="" class="form-control @error('email') is-invalid @enderror" autocomplete="username" required>
+                            <input id="login-email" type="email" name="email" value="" class="form-control @error('email') is-invalid @enderror" autocomplete="off" readonly required>
                             @if(old('_form') === 'login')
                                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             @endif
@@ -219,7 +219,7 @@
                         <div class="mb-3">
                             <label for="login-password" class="form-label">Password</label>
                             <div class="input-group">
-                                <input id="login-password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="current-password" required>
+                                <input id="login-password" type="password" name="password" value="" class="form-control @error('password') is-invalid @enderror" autocomplete="off" readonly required>
                                 <button class="btn password-toggle" type="button" data-password-toggle="login-password" aria-label="Tampilkan password" aria-pressed="false">
                                     <i class="bi bi-eye" aria-hidden="true"></i>
                                 </button>
@@ -345,6 +345,11 @@
             confirmation.addEventListener('input', updatePasswordRequirements);
             updatePasswordRequirements();
         })();
+    </script>
+    <script>
+        document.querySelectorAll('#login-email, #login-password').forEach((input) => {
+            input.addEventListener('focus', () => input.removeAttribute('readonly'), { once: true });
+        });
     </script>
     @if(($showLoginRequiredModal ?? false) && ! $errors->any() && ! session('success'))
         <script>
