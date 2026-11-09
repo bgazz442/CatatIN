@@ -1,49 +1,160 @@
 # CatatIn
 
-CatatIn is a Laravel web application for personal learning and productivity. Users can manage study notes, categories, tasks, goals and progress, saved media, private attachments, and an AI learning assistant.
+CatatIn adalah aplikasi web Laravel untuk membantu pengguna mengelola catatan belajar dan aktivitas produktivitas dalam satu ruang pribadi. Aplikasi menyediakan dashboard, catatan dan lampiran privat, tugas, target, media belajar tersimpan, asisten AI, serta panel administrasi.
 
-## Stack
+> **Status integrasi:** aplikasi berjalan sebagai proyek Laravel lokal. Mailpit dapat digunakan untuk menguji email reset password secara lokal. Pengiriman email production melalui Brevo memerlukan kredensial SMTP dan sender/domain terverifikasi yang disediakan pemilik deployment; kredensial tersebut tidak disimpan di repository.
 
-- Laravel 11 and PHP 8.3+
-- Blade, Tailwind CSS 3, Vite 5, and Lucide icons
-- MySQL for local/deployed application data
-- Ollama for local AI chat; the legacy AI transcription feature is currently disabled
+## Daftar isi
 
-## Features
+- [Fitur](#fitur)
+- [Teknologi](#teknologi)
+- [Persyaratan](#persyaratan)
+- [Menjalankan secara lokal dengan Laragon](#menjalankan-secara-lokal-dengan-laragon)
+- [Email reset password](#email-reset-password)
+- [CatatIn Assistant dan Ollama](#catatin-assistant-dan-ollama)
+- [Lampiran dan penyimpanan file](#lampiran-dan-penyimpanan-file)
+- [Akun administrator](#akun-administrator)
+- [Pengujian](#pengujian)
+- [Catatan deployment](#catatan-deployment)
+- [Keamanan dan data](#keamanan-dan-data)
 
-- Account registration, login/logout, password reset, and account settings.
-- Notes with search, categories, favorites, and private attachments.
-- Tasks with status, category, due date, filtering, and search.
-- Goals with progress history and optional private images.
-- Saved media links and favorites.
-- CatatIn AI with user-specific conversation history, relevant notes/productivity/saved-media retrieval, and source references.
-- Admin dashboard and user administration for authorized administrators.
+## Fitur
 
-## Local setup (Laragon / Windows)
+### Akun dan autentikasi
 
-Requirements: PHP 8.3+, Composer, Node.js/npm, and MySQL. Use the PHP 8.3 runtime configured in Laragon; enable the PHP extensions required by Laravel (including `pdo_mysql`, `fileinfo`, `mbstring`, `openssl`, and `zip`).
+- Registrasi, login, logout, dan opsi “Ingat saya”.
+- Form login dikosongkan saat pertama dibuka dan mencegah autofill sebelum pengguna memilih field; password manager browser tetap dapat menawarkan kredensial setelah field dipilih.
+- Lupa password melalui tautan email dengan token Laravel yang kedaluwarsa setelah 60 menit dan dibatasi permintaannya.
+- Password reset memerlukan minimal 10 karakter, huruf besar, huruf kecil, angka, dan simbol khusus. Setelah disimpan, password baru langsung menjadi password akun.
+- Pesan permintaan reset dibuat generik agar keberadaan akun tidak diumumkan.
+- Proteksi route berbasis autentikasi dan peran pengguna/admin.
 
-1. Copy `.env.example` to `.env` if needed and set a unique local `APP_KEY` with `php artisan key:generate`.
-2. Create a local MySQL database and set `DB_CONNECTION=mysql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in `.env`.
-3. Install dependencies and build assets:
+### Catatan belajar
 
-   ```sh
-   composer install
-   npm ci
-   npm run build
-   ```
+- Buat, baca, ubah, dan hapus catatan.
+- Cari catatan, urutkan, filter kategori, dan tandai favorit.
+- Lampirkan dokumen secara privat; pratinjau dan unduhan dilakukan melalui route aplikasi yang memeriksa kepemilikan.
 
-4. **Review pending migrations before applying them.** Do not run `php artisan migrate` on a database containing data you need until the pending `2026_11_07_000000_remove_daily_activities` migration has been reviewed: it drops the `daily_activities` table. Back up the database and decide how to preserve/archive those records first. The migration status can be inspected with `php artisan migrate:status`; do not use `migrate:fresh` or `db:wipe`.
-5. Once migrations have been reviewed and the database is backed up, apply approved migrations with `php artisan migrate`.
-6. Start the application with `php artisan serve` and open `http://127.0.0.1:8000`.
+### Produktivitas
 
-For iterative frontend development, use `npm run dev`. Keep the local Laragon `.env` private; never commit it.
+- Kelola tugas, tenggat, kategori, dan status pending, dikerjakan, atau selesai.
+- Cari dan filter tugas, ubah status, dan pantau tugas mendatang serta tenggat terlewat dari dashboard.
+- Buat target dengan nilai saat ini, nilai sasaran, tenggat, tipe target, riwayat progres, dan gambar opsional.
+- Dashboard menampilkan ringkasan tugas dan target aktif.
 
-### Testing password-reset email locally with Mailpit
+### Media belajar tersimpan
 
-Install Mailpit for Windows and start it in a terminal with `mailpit`. Its default SMTP listener is `127.0.0.1:1025`, and its inbox is available at `http://127.0.0.1:8025`.
+- Simpan tautan media belajar, kategori, platform, deskripsi, dan status favorit.
+- Cari, filter, urutkan, lihat detail, ubah, dan hapus media.
+- Tautan video dapat ditampilkan melalui embed yang sesuai dengan platform yang didukung. Penyimpanan tautan tidak berarti CatatIn menganalisis isi video.
 
-Set these values manually in the local `.env` file (do not commit it):
+### CatatIn Assistant
+
+- Percakapan AI pribadi dengan riwayat percakapan yang dapat dibuka dan dihapus.
+- Jika layanan Ollama tersedia, asisten dapat menggunakan konteks yang relevan dari catatan/lampiran, tugas, target, media tersimpan, dan pengetahuan situs.
+- Pengambilan data ruang kerja dibatasi untuk pengguna yang sedang login; permintaan chat diberi rate limit.
+- CatatIn tidak otomatis mengunduh model dan tidak mengirim prompt ke API AI berbayar eksternal.
+
+### Pengaturan dan administrasi
+
+- Pengguna dapat mengubah nama profil dan preferensi warna tampilan miliknya.
+- Admin yang berwenang dapat melihat dashboard admin, mengelola pengguna, serta mengubah pengaturan admin.
+- Penghapusan atau penurunan status admin terakhir dibatasi oleh aplikasi.
+
+### Fitur yang sedang tidak aktif
+
+Transkripsi audio/video lama saat ini **dinonaktifkan** dan tidak tersedia sebagai alur fitur untuk pengguna. Catatan transkripsi lama dipertahankan, tetapi aplikasi tidak menerima transkripsi baru. Mengaktifkannya kembali memerlukan implementasi alur upload/status/hasil, worker, whisper.cpp, FFmpeg/ffprobe, dan model yang kompatibel.
+
+## Teknologi
+
+- PHP 8.3+ dan Laravel 11.
+- Blade, Tailwind CSS 3, Vite 5, Bootstrap pada halaman autentikasi, dan ikon Lucide.
+- MySQL/MariaDB untuk data aplikasi.
+- SMTP Mailpit untuk pengembangan lokal; SMTP Brevo dapat dikonfigurasi untuk pengiriman sungguhan.
+- Ollama lokal untuk chat dan embedding CatatIn Assistant.
+
+## Persyaratan
+
+Untuk pengembangan Windows/Laragon:
+
+- PHP 8.3+ dengan ekstensi Laravel yang diperlukan, termasuk `pdo_mysql`, `fileinfo`, `mbstring`, `openssl`, dan `zip`.
+- Composer.
+- Node.js/npm.
+- MySQL atau MariaDB lokal.
+- Git.
+- Mailpit opsional untuk melihat email reset password lokal.
+- Ollama opsional untuk menggunakan CatatIn Assistant.
+
+## Menjalankan secara lokal dengan Laragon
+
+### 1. Ambil source dan pasang dependency
+
+```powershell
+git clone https://github.com/bgazz442/CatatIN.git
+cd CatatIN
+composer install
+npm ci
+npm run build
+```
+
+Jika repository sudah tersedia, pindah ke folder proyek dan sinkronkan branch yang ingin dijalankan sebelum memasang dependency.
+
+### 2. Atur environment dan database
+
+Salin `.env.example` menjadi `.env` bila belum ada. Buat database MySQL/MariaDB lokal, lalu atur `APP_KEY`, URL lokal, dan variabel database seperti `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, serta `DB_PASSWORD` di file `.env` lokal.
+
+Contoh URL saat menggunakan `php artisan serve`:
+
+```dotenv
+APP_URL=http://127.0.0.1:8000
+```
+
+Buat application key jika belum ada:
+
+```powershell
+php artisan key:generate
+```
+
+### 3. Tinjau migrasi sebelum dijalankan
+
+Periksa status migrasi:
+
+```powershell
+php artisan migrate:status
+```
+
+**Penting:** migrasi `2026_11_07_000000_remove_daily_activities` menghapus tabel `daily_activities`. Sebelum menerapkan migrasi tertunda pada database yang berisi data penting, tinjau file migrasinya, buat backup, dan tentukan cara mempertahankan data yang dibutuhkan. Jangan menggunakan `migrate:fresh` atau `db:wipe` pada database yang ingin dipertahankan.
+
+Setelah migrasi tertunda ditinjau dan database aman untuk diperbarui:
+
+```powershell
+php artisan migrate
+```
+
+### 4. Jalankan aplikasi
+
+```powershell
+php artisan serve
+```
+
+Buka `http://127.0.0.1:8000`. Untuk pengembangan frontend dengan hot reload, jalankan `npm run dev` di terminal terpisah.
+
+## Email reset password
+
+### Pengiriman lokal dengan Mailpit
+
+Mailpit menangkap email di komputer lokal dan **tidak** mengirim email tersebut ke Gmail/internet. Jalankan Mailpit:
+
+```powershell
+mailpit
+```
+
+Default alamat Mailpit:
+
+- SMTP: `127.0.0.1:1025`
+- Web inbox: <http://127.0.0.1:8025>
+
+Atur nilai berikut secara manual di `.env` lokal:
 
 ```dotenv
 APP_URL=http://127.0.0.1:8000
@@ -57,67 +168,106 @@ MAIL_FROM_ADDRESS="catatin@localhost"
 MAIL_FROM_NAME="CatatIn"
 ```
 
-If using a Laragon virtual host instead of `php artisan serve`, set `APP_URL` to that exact local origin. The SMTP mailer uses the individual host/port variables; `MAIL_URL` is intentionally not used. Start CatatIn, open the forgot-password page, and submit the email address of a local account. View the reset email in the Mailpit inbox; its link uses `APP_URL`.
+Jika aplikasi dijalankan melalui virtual host Laragon, ganti `APP_URL` dengan origin virtual host yang benar. `config/mail.php` menggunakan variabel SMTP individual dan tidak memakai `MAIL_URL`, sehingga `MAIL_URL` tidak menimpa host/port tersebut. Setelah mengubah variabel, restart server Laravel atau bersihkan config cache bila sebelumnya pernah diaktifkan:
 
-## Environment configuration
-
-Configure these values in the deployment environment, not in source control:
-
-- **Application:** `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://your-domain`, and a unique `APP_KEY`.
-- **Database:** production MySQL connection values. Do not point automated tests at production.
-- **Session/cache/queue:** keep `SESSION_DRIVER=database` for password-reset session revocation and provision the required tables. Configure persistent production-compatible cache/queue drivers and their tables/services as needed.
-- **Mail:** Configure the SMTP mailer with deployment environment variables; never commit credentials. For Brevo SMTP, set the following values in the deployment environment or local `.env` (replace placeholders; do not use an API key as the SMTP password):
-
-  ```dotenv
-  APP_ENV=production
-  APP_DEBUG=false
-  APP_URL=https://your-domain.example
-  MAIL_MAILER=smtp
-  MAIL_HOST=smtp-relay.brevo.com
-  MAIL_PORT=587
-  MAIL_USERNAME=your-brevo-login-email
-  MAIL_PASSWORD=your-brevo-smtp-key
-  MAIL_ENCRYPTION=tls
-  MAIL_FROM_ADDRESS=your-verified-sender@example.com
-  MAIL_FROM_NAME="CatatIn"
-  ```
-
-  Use the SMTP login and SMTP key shown in Brevo's SMTP & API settings, and verify the sender/domain in Brevo before sending. `MAIL_URL` is intentionally ignored so it cannot override the explicit SMTP settings. Local Mailpit settings are documented above. `MAIL_MAILER=log` does not send email.
-- **File storage:** learning attachments and goal images use the private `learning_private` disk and authorized application routes; they are not public assets. Configure persistent private storage or an appropriately protected object store for deployment. The `public` disk's storage symlink is for intentionally public files only.
-- **Admin bootstrap (optional):** set `ADMIN_PASSWORD` only in a local/deployment secret store before running the approved `AdminSeeder`. Never put the value in Git.
-
-Run `php artisan config:cache` only after deployment environment variables have been set; clear cached configuration when changing them.
-
-## CatatIn AI and transcription
-
-Chat uses a locally reachable Ollama service. Configure `OLLAMA_BASE_URL` and `OLLAMA_MODEL`; install/pull the chosen model separately. Retrieval is scoped to the signed-in user's notes, attachments, tasks, goals, and accessible saved-media metadata (title, description, platform, and category); media links do not imply that video contents are analyzed. Chat requests are rate limited per signed-in user. CatatIn does not automatically download models or send prompts to a paid external AI API. A hosted demo cannot access Ollama on a developer's computer: deploy an Ollama service privately and securely, or mark AI as unavailable in the demo.
-
-Audio/video transcription is currently disabled: no user-facing transcription route is registered, and the queued worker marks legacy pending jobs as disabled. Existing transcription records are retained, but new media is not transcribed. Restoring this feature requires implementing and testing its authenticated upload/status/result flow and installing whisper.cpp, FFmpeg/ffprobe, and a compatible model on the host. No model is downloaded automatically.
-
-## Tests and checks
-
-The PHPUnit suite uses the database configured in `phpunit.xml`; verify it points to an isolated test database or an in-memory database before running:
-
-```sh
-php artisan test
-npm run build
-php artisan route:list
-php artisan migrate:status
+```powershell
+php artisan config:clear
 ```
 
-The project has feature coverage for authentication/password reset, notes, productivity, categories, attachments, admin access, and AI behavior. Add regression tests for any behavior changes. Do not run the suite against a production database.
+Untuk menguji, buka halaman **Lupa password?**, masukkan email akun yang ada di database lokal, lalu lihat pesan **Reset Password Notification** di inbox Mailpit. Link dalam email menggunakan `APP_URL`; buka link pada browser yang dapat mengakses alamat lokal tersebut. Token berlaku 60 menit, tidak dapat dipakai kembali setelah berhasil, dan endpoint permintaan reset diberi rate limit.
 
-## Deployment notes
+### Pengiriman sungguhan dengan Brevo SMTP
 
-This is a Laravel application with MySQL, persistent sessions/cache, private file storage, and optional Ollama. Vercel is not the recommended host for the complete application: its serverless model does not provide the persistent local storage or long-running local Ollama service this project expects.
+Brevo SMTP belum dapat dianggap aktif sampai pemilik aplikasi memasukkan kredensial SMTP yang valid dan melakukan uji kirim nyata. Dapatkan **SMTP login** dan **SMTP key** melalui pengaturan SMTP Brevo; jangan gunakan API key sebagai SMTP password. Verifikasi alamat pengirim/domain di Brevo terlebih dahulu.
 
-Railway's Railpack reads the PHP version constraint from `composer.json`; the `^8.3` requirement selects PHP 8.3 for builds and runtime. Keep `composer.lock` committed so Railway installs the audited dependency versions.
+Contoh variabel untuk `.env` production atau secret manager hosting:
 
-Deploy the Laravel backend to a PHP-capable host (for example, a managed Laravel/PHP platform or a VPS), use managed MySQL and persistent private/object storage, configure HTTPS and production secrets, and run only reviewed migrations after taking a backup. GitHub can host the source repository and CI; Vercel may host a separate static frontend if one is introduced, but it does not replace the Laravel backend. Confirm every optional external service is reachable from the deployed backend.
+```dotenv
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://domain-anda
+MAIL_MAILER=smtp
+MAIL_HOST=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_USERNAME=login-smtp-brevo-anda
+MAIL_PASSWORD=smtp-key-brevo-anda
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=email-pengirim-terverifikasi
+MAIL_FROM_NAME="CatatIn"
+```
 
-## Security and data handling
+Ganti semua nilai contoh sebelum digunakan. Jangan commit `.env`, SMTP key, password, atau kredensial. Atur `APP_URL` ke domain HTTPS production—jangan memakai localhost. Setelah kredensial diatur, bersihkan config cache bila perlu, kirim permintaan reset ke akun uji yang dapat diakses, dan pastikan email benar-benar diterima. Penerimaan oleh Mailpit hanya menguji alur lokal, bukan pengiriman Brevo ke inbox sungguhan.
 
-- Private application routes authorize records against the signed-in user; admin routes require admin authorization.
-- Do not publish `.env`, credentials, AI model files, private storage, SQL dumps, database backups, or logs.
-- Use HTTPS, secure production cookies, a least-privilege database account, backups, and monitored error reporting in deployment.
-- Review migrations and retention requirements before changing or deleting stored user data.
+## CatatIn Assistant dan Ollama
+
+CatatIn Assistant memerlukan layanan Ollama yang berjalan dan dapat dijangkau dari PHP. Default aplikasi:
+
+- URL Ollama: `http://127.0.0.1:11434`
+- Model chat: `qwen3:1.7b`
+- Model embedding: `nomic-embed-text`
+
+Pasang Ollama sesuai sistem operasi, jalankan layanan, lalu ambil model default:
+
+```powershell
+ollama pull qwen3:1.7b
+ollama pull nomic-embed-text
+```
+
+Konfigurasi dapat disesuaikan melalui `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_EMBEDDING_MODEL`, `OLLAMA_TIMEOUT`, dan `OLLAMA_CONNECT_TIMEOUT`. Nilai default lengkap tersedia di `config/ollama.php`. Model harus diunduh secara terpisah; aplikasi tidak mengunduhnya otomatis. Jika Ollama tidak tersedia, fitur chat dapat mengembalikan status layanan tidak tersedia.
+
+## Lampiran dan penyimpanan file
+
+Lampiran catatan dan gambar target disimpan pada disk privat `learning_private`, bukan direktori publik. Route pratinjau/unduh memeriksa kepemilikan sebelum mengirim file. Untuk deployment, gunakan persistent storage privat atau object storage yang dikonfigurasi dan dilindungi dengan benar. Jangan mengekspos folder storage privat melalui web server. Disk `public` hanya untuk berkas yang memang sengaja dibuat publik.
+
+## Akun administrator
+
+Admin awal dibuat melalui seeder `AdminSeeder`, bukan akun yang otomatis dibuat saat registrasi biasa. Sebelum menjalankan seeder, atur `ADMIN_PASSWORD` hanya di environment lokal/secret store. Password admin minimal 16 karakter serta harus memiliki huruf besar, huruf kecil, angka, dan simbol.
+
+Tinjau kode seeder dan pastikan database yang dipilih benar sebelum menjalankan:
+
+```powershell
+php artisan db:seed --class=AdminSeeder
+```
+
+Seeder tidak mengubah akun admin yang sudah ada dan akan menolak mengambil alih email yang sudah dimiliki akun non-admin. Jangan menaruh password admin di Git atau README.
+
+## Pengujian
+
+Konfigurasi PHPUnit di `phpunit.xml` menunjuk database MySQL **terpisah** bernama `catatin_test_db`, memakai mailer `array`, dan session driver `array`. Pastikan database tersebut memang database tes dan bukan database berisi data lokal/production sebelum menjalankan:
+
+```powershell
+php artisan test
+```
+
+Jalankan pemeriksaan frontend dan route secara opsional:
+
+```powershell
+npm run build
+php artisan route:list
+```
+
+Tes reset password mencakup validasi email, token valid/kedaluwarsa/tidak valid, penggunaan ulang token, hashing password, login dengan password baru, URL `APP_URL`, throttling, respons generik, dan kegagalan SMTP. Tes otomatis tidak membuktikan bahwa SMTP production dapat mengirim email ke inbox penerima.
+
+## Catatan deployment
+
+Source ini adalah aplikasi Laravel full-stack dengan MySQL, session/cache, private file storage, email, dan layanan Ollama opsional. Repository saja tidak menyediakan database production, kredensial email, storage persisten, atau layanan AI. Siapkan dependency tersebut di hosting sebelum aplikasi digunakan.
+
+Untuk deployment Laravel:
+
+1. Gunakan host PHP yang mendukung Laravel 11 dan PHP 8.3+.
+2. Set `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` HTTPS publik, `APP_KEY`, dan seluruh secret di environment hosting.
+3. Percayakan proxy HTTPS yang benar bila berada di belakang reverse proxy; proyek mengaktifkan trust proxy Laravel dan memaksa skema URL HTTPS pada production.
+4. Konfigurasikan database, session/cache, email, serta penyimpanan privat yang persisten.
+5. Siapkan Node/npm saat build dan jalankan `npm ci` lalu `npm run build` agar `public/build/manifest.json` dan aset Vite tersedia.
+6. Tinjau migrasi tertunda serta backup sebelum migrasi database.
+7. Uji email, lampiran privat, login, dan semua layanan eksternal dari environment hosting.
+
+Jangan menganggap pengiriman Brevo atau layanan production lain sudah siap sebelum konfigurasi hosting dan pengujian nyata dilakukan. Vercel saja bukan pengganti backend Laravel persisten dan layanan Ollama.
+
+## Keamanan dan data
+
+- Jangan commit `.env`, kredensial, SMTP key/API key, backup, dump SQL, log, model AI, atau file pengguna privat.
+- Gunakan HTTPS, `APP_DEBUG=false`, secret yang unik, akun database berhak minimum, backup, dan pemantauan error untuk production.
+- Jangan mengarahkan tes atau perintah migrasi ke database production.
+- Tinjau dan backup data sebelum migrasi yang mengubah atau menghapus tabel.
+- Jaga lampiran privat tetap di disk non-publik dan pertahankan pemeriksaan otorisasi pemilik.
