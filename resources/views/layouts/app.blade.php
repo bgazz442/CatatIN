@@ -215,18 +215,18 @@
         </main>
 
         <!-- Footer -->
-        <footer class="theme-page-footer theme-nav-surface mt-auto border-t px-5 py-8 md:px-8 md:py-9" role="contentinfo">
-            <div class="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
-                <div class="flex items-center gap-3">
+        <footer class="theme-page-footer theme-nav-surface mt-auto shrink-0 border-t px-5 py-8 md:px-8 md:py-9" role="contentinfo">
+            <div class="mx-auto flex w-full min-w-0 max-w-[1440px] flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+                <div class="flex min-w-0 items-center gap-3 text-left">
                     <div class="theme-footer-mark flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm">
                         <i data-lucide="book-open-check" class="h-5 w-5"></i>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <p class="text-sm font-bold text-slate-800">Catat<span class="theme-footer-accent">In</span></p>
-                        <p class="mt-1 text-xs text-slate-500">Produktivitas personal untuk tugas dan target</p>
+                        <p class="mt-1 text-xs leading-relaxed text-slate-500">Produktivitas personal untuk tugas dan target</p>
                     </div>
                 </div>
-                <p class="theme-footer-copy rounded-full px-4 py-2 text-xs font-semibold">&copy; {{ now()->year }} CatatIn</p>
+                <p class="theme-footer-copy whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold">&copy; {{ now()->year }} CatatIn</p>
             </div>
         </footer>
     </div>
@@ -285,10 +285,14 @@
         // Mobile menu toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const closeMobileBtn = document.getElementById('close-mobile-menu');
+        const mobileHeader = document.getElementById('mobile-header');
+        const appTopbar = document.querySelector('.app-topbar');
         const sidebar = document.getElementById('sidebar');
         const backdrop = document.getElementById('mobile-backdrop');
 
-        function toggleSidebar(open) {
+        function toggleSidebar(open, restoreFocus = false) {
+            if (!sidebar || !backdrop) return;
+
             sidebar.style.left = open ? '0' : '-256px';
             if (open) {
                 sidebar.classList.remove('-translate-x-full');
@@ -297,14 +301,33 @@
                 sidebar.classList.add('-translate-x-full');
                 backdrop.classList.add('hidden');
             }
+            if (mobileHeader) {
+                mobileHeader.hidden = open;
+                mobileHeader.style.display = open ? 'none' : '';
+            }
+            if (appTopbar) {
+                appTopbar.hidden = open;
+                appTopbar.style.display = open ? 'none' : '';
+            }
             mobileMenuBtn?.setAttribute('aria-expanded', String(open));
+            if (open) closeMobileBtn?.focus({ preventScroll: true });
+            else if (restoreFocus) mobileMenuBtn?.focus({ preventScroll: true });
         }
 
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) {
+                if (!sidebar || !backdrop) return;
                 sidebar.style.removeProperty('left');
                 sidebar.classList.add('-translate-x-full');
                 backdrop.classList.add('hidden');
+                if (mobileHeader) {
+                    mobileHeader.hidden = false;
+                    mobileHeader.style.removeProperty('display');
+                }
+                if (appTopbar) {
+                    appTopbar.hidden = false;
+                    appTopbar.style.removeProperty('display');
+                }
                 mobileMenuBtn?.setAttribute('aria-expanded', 'false');
             }
         });
@@ -313,11 +336,16 @@
             mobileMenuBtn.addEventListener('click', () => toggleSidebar(true));
         }
         if (closeMobileBtn) {
-            closeMobileBtn.addEventListener('click', () => toggleSidebar(false));
+            closeMobileBtn.addEventListener('click', () => toggleSidebar(false, true));
         }
         if (backdrop) {
-            backdrop.addEventListener('click', () => toggleSidebar(false));
+            backdrop.addEventListener('click', () => toggleSidebar(false, true));
         }
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && mobileMenuBtn?.getAttribute('aria-expanded') === 'true') {
+                toggleSidebar(false, true);
+            }
+        });
 
         const accountMenus = document.querySelectorAll('[data-account-menu]');
         const closeAccountMenu = (menu, restoreFocus = false) => {

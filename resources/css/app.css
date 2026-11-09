@@ -1959,6 +1959,19 @@ body.ai-chat-layout {
     box-shadow: 0 8px 24px rgba(15, 23, 42, .12);
   }
 
+  @media (max-width: 767px) {
+    body:not(.ai-chat-layout) {
+      padding-top: 68px;
+    }
+
+    #mobile-header {
+      position: fixed;
+      top: 0;
+      right: 0;
+      left: 0;
+    }
+  }
+
   .mobile-brand-mark,
   .sidebar-brand-mark {
     border: 1px solid rgba(255, 255, 255, .28);
