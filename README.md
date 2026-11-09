@@ -4,7 +4,7 @@ CatatIn is a Laravel web application for personal learning and productivity. Use
 
 ## Stack
 
-- Laravel 11 and PHP 8.2+
+- Laravel 11 and PHP 8.3+
 - Blade, Tailwind CSS 3, Vite 5, and Lucide icons
 - MySQL for local/deployed application data
 - Ollama for local AI chat; the legacy AI transcription feature is currently disabled
@@ -21,7 +21,7 @@ CatatIn is a Laravel web application for personal learning and productivity. Use
 
 ## Local setup (Laragon / Windows)
 
-Requirements: PHP 8.2+, Composer, Node.js/npm, and MySQL. Enable the PHP extensions required by Laravel (including `pdo_mysql`, `fileinfo`, `mbstring`, `openssl`, and `zip`).
+Requirements: PHP 8.3+, Composer, Node.js/npm, and MySQL. Use the PHP 8.3 runtime configured in Laragon; enable the PHP extensions required by Laravel (including `pdo_mysql`, `fileinfo`, `mbstring`, `openssl`, and `zip`).
 
 1. Copy `.env.example` to `.env` if needed and set a unique local `APP_KEY` with `php artisan key:generate`.
 2. Create a local MySQL database and set `DB_CONNECTION=mysql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in `.env`.
@@ -74,6 +74,8 @@ The project has feature coverage for authentication/password reset, notes, produ
 ## Deployment notes
 
 This is a Laravel application with MySQL, persistent sessions/cache, private file storage, and optional Ollama. Vercel is not the recommended host for the complete application: its serverless model does not provide the persistent local storage or long-running local Ollama service this project expects.
+
+Railway's Railpack reads the PHP version constraint from `composer.json`; the `^8.3` requirement selects PHP 8.3 for builds and runtime. Keep `composer.lock` committed so Railway installs the audited dependency versions.
 
 Deploy the Laravel backend to a PHP-capable host (for example, a managed Laravel/PHP platform or a VPS), use managed MySQL and persistent private/object storage, configure HTTPS and production secrets, and run only reviewed migrations after taking a backup. GitHub can host the source repository and CI; Vercel may host a separate static frontend if one is introduced, but it does not replace the Laravel backend. Confirm every optional external service is reachable from the deployed backend.
 
