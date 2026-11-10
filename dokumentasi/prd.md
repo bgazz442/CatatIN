@@ -15,6 +15,12 @@
 - [Data Requirements](#data-requirements)
 - [Constraints & Out of Scope](#constraints--out-of-scope)
 - [Acceptance Criteria](#acceptance-criteria)
+- [Flowchart Utama](#flowchart-utama)
+  - [Alur Aplikasi](#alur-aplikasi)
+  - [Alur Autentikasi](#alur-autentikasi)
+  - [Alur Catatan Belajar](#alur-catatan-belajar)
+  - [Alur Task Manager dan Goal Tracker](#alur-task-manager-dan-goal-tracker)
+  - [Alur Admin dan Pengaturan](#alur-admin-dan-pengaturan)
 
 ## Product Overview
 
@@ -244,7 +250,7 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 - Database, SMTP, dan storage privat perlu disediakan/dikonfigurasi untuk environment deployment.
 - Kategori tersedia bersama dan tidak memiliki kepemilikan per user pada skema yang diaudit.
 - Tidak ada bukti di repository tentang baseline metrik, SLA, atau hasil riset persona.
-- Audit struktur route menemukan bahwa ada ketidaksesuaian antara status fitur yang diminta dan source checkout. Fitur yang dinyatakan telah dihapus sengaja tidak dijabarkan di PRD maupun flowchart sesuai instruksi; status penghapusannya dari aplikasi perlu diverifikasi terpisah.
+- Dokumentasi ini hanya mencakup alur yang tersedia pada source code yang diaudit.
 
 ### Out of scope atau belum tersedia
 
@@ -267,4 +273,148 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 8. **Target:** target baru mulai pada progres nol; penambahan/pengurangan progres memperbarui nilai, riwayat, dan status; progres negatif atau persentase di atas target ditolak.
 9. **Pengaturan:** perubahan nama dan tema hanya tersimpan untuk akun pemilik; warna tema yang tidak valid atau tidak memenuhi kontras ditolak; guest tidak dapat menyimpan tema.
 10. **Admin:** route admin menolak guest/user/nonaktif; pembatasan admin utama dan admin terakhir tetap ditegakkan; admin tidak dapat menghapus atau mengubah dirinya lewat manajemen pengguna.
-11. **Scope dokumentasi:** PRD dan flowchart tidak menjelaskan fitur di luar implementasi yang diaudit; fitur yang secara eksplisit dikecualikan tidak dimasukkan sebagai alur produk.
+11. **Scope dokumentasi:** seluruh persyaratan dan diagram di dokumen ini sesuai dengan fitur yang tercantum dalam PRD dan implementasi yang diaudit.
+
+## Flowchart Utama
+
+Diagram ringkas berikut melengkapi persyaratan dan spesifikasi produk di dokumen ini. Alur menggambarkan fitur yang ditemukan pada source code, bukan rancangan fitur masa depan.
+
+### Alur Aplikasi
+
+Dashboard dapat dibuka publik. Fitur produktivitas memerlukan user aktif, sedangkan pengelolaan aplikasi memerlukan admin aktif.
+
+```mermaid
+flowchart TD
+    A["Mulai / buka CatatIn"] --> B{"Halaman publik?"}
+    B -->|"Ya"| C["Tampilkan halaman publik"]
+    B -->|"Tidak"| D{"Sudah login?"}
+    D -->|"Belum"| E["Arahkan ke login"]
+    E --> F["Alur Autentikasi"]
+    F --> G{"Akun aktif dan role sesuai?"}
+    D -->|"Sudah"| G
+    G -->|"Tidak"| H["Tolak akses"]
+    G -->|"User aktif"| I["Dashboard dan fitur pribadi"]
+    I --> J["Catatan, tugas, target, atau pengaturan"]
+    G -->|"Admin aktif"| K["Dashboard dan area admin"]
+```
+
+### Alur Autentikasi
+
+Pengguna dapat login, mendaftar, atau mengatur ulang password. Registrasi dan reset menerima password minimal delapan karakter tanpa syarat komposisi.
+
+```mermaid
+flowchart TD
+    A["Buka autentikasi"] --> B{"Pilih tindakan"}
+    B -->|"Login"| C["Isi email dan password"]
+    C --> D{"Kredensial valid dan akun aktif?"}
+    D -->|"Tidak"| E["Tampilkan kesalahan"]
+    E --> C
+    D -->|"Ya"| F["Buat sesi dan arahkan sesuai role"]
+    B -->|"Registrasi"| G["Isi nama, email, password, konfirmasi"]
+    G --> H{"Email unik dan password valid?"}
+    H -->|"Tidak"| I["Tampilkan kesalahan"]
+    I --> G
+    H -->|"Ya"| J["Buat akun user dan login"]
+    B -->|"Lupa password"| K["Minta tautan reset melalui email"]
+    K --> L["Tampilkan respons generik"]
+    L --> M{"Token valid dan belum kedaluwarsa?"}
+    M -->|"Tidak"| N["Tampilkan kesalahan token"]
+    M -->|"Ya"| O["Isi password baru dan konfirmasi"]
+    O --> P{"Password minimal 8 karakter dan konfirmasi cocok?"}
+    P -->|"Tidak"| Q["Tampilkan kesalahan"]
+    Q --> O
+    P -->|"Ya"| R["Simpan password dan arahkan ke login"]
+```
+
+### Alur Catatan Belajar
+
+Catatan dan lampirannya dikelola oleh user pemilik; pencarian, filter, favorit, dan lampiran privat tersedia.
+
+```mermaid
+flowchart TD
+    A["Buka daftar catatan"] --> B["Tampilkan catatan milik user"]
+    B --> C{"Pilih tindakan"}
+    C -->|"Cari, filter, atau favorit"| D["Perbarui tampilan daftar"]
+    D --> B
+    C -->|"Buat atau edit"| E["Isi judul, kategori, isi, atau lampiran"]
+    C -->|"Buka catatan"| F{"Catatan milik user?"}
+    F -->|"Tidak"| G["Tolak akses"]
+    F -->|"Ya"| H["Lihat detail atau kelola lampiran"]
+    H --> C
+    C -->|"Hapus"| I["Hapus catatan dan lampiran terkait"]
+    I --> B
+    E --> J{"Data valid dan isi atau lampiran tersedia?"}
+    J -->|"Tidak"| K["Tampilkan kesalahan validasi"]
+    K --> E
+    J -->|"Ya"| L["Simpan catatan dan lampiran privat"]
+    L --> B
+```
+
+### Alur Task Manager dan Goal Tracker
+
+Tugas dan target dibatasi pada pemiliknya. Progres target dicatat dalam riwayat dan menentukan status aktif atau selesai.
+
+```mermaid
+flowchart TD
+    A["Buka fitur produktivitas"] --> B{"Pilih fitur"}
+    B -->|"Task Manager"| C["Tampilkan tugas milik user"]
+    C --> D{"Pilih tindakan tugas"}
+    D -->|"Cari atau filter"| C
+    D -->|"Buat atau edit"| E["Isi data tugas"]
+    E --> F{"Input valid?"}
+    F -->|"Tidak"| G["Tampilkan kesalahan"]
+    G --> E
+    F -->|"Ya"| H["Simpan tugas"]
+    H --> C
+    D -->|"Ubah status"| I{"Status valid?"}
+    I -->|"Tidak"| G
+    I -->|"Ya"| J["Simpan status tugas"]
+    J --> C
+    D -->|"Hapus"| K["Hapus tugas milik user"]
+    K --> C
+    B -->|"Goal Tracker"| T["Tampilkan target milik user"]
+    T --> U{"Pilih tindakan target"}
+    U -->|"Buat atau edit"| V{"Target valid?"}
+    V -->|"Tidak"| W["Tampilkan kesalahan"]
+    W --> U
+    V -->|"Ya"| X["Simpan target"]
+    X --> T
+    U -->|"Tambah atau kurangi progres"| Y{"Nilai tidak negatif dan persentase tidak melewati target?"}
+    Y -->|"Tidak"| W
+    Y -->|"Ya"| Z["Simpan riwayat dan hitung progres"]
+    Z --> AA["Perbarui status aktif/selesai"]
+    AA --> T
+    U -->|"Hapus"| AB["Hapus target dan riwayat"]
+    AB --> T
+```
+
+### Alur Admin dan Pengaturan
+
+Admin aktif mengelola akun sesuai pembatasan role. User dapat mengatur nama dan tema; guest hanya dapat melihat pengaturan tema.
+
+```mermaid
+flowchart TD
+    A["Buka menu atau pengaturan"] --> B{"Role akun"}
+    B -->|"Admin aktif"| C{"Pilih dashboard, kelola user, atau pengaturan admin"}
+    C -->|"Dashboard"| P["Lihat statistik admin"]
+    P --> C
+    C -->|"Kelola user"| D{"Aksi sesuai kewenangan dan perlindungan admin?"}
+    D -->|"Tidak"| E["Tolak aksi"]
+    D -->|"Ya"| F["Simpan perubahan akun"]
+    F --> C
+    C -->|"Pengaturan admin"| G["Ubah nama/email atau password admin"]
+    G --> Q{"Password saat ini valid bila password diganti?"}
+    Q -->|"Tidak"| S["Tampilkan kesalahan"]
+    S --> G
+    Q -->|"Ya"| R["Simpan pengaturan admin"]
+    R --> C
+    B -->|"User aktif"| H{"Pilih ubah nama atau tema"}
+    H -->|"Nama"| I["Validasi dan simpan nama"]
+    H -->|"Tema"| J{"Format warna dan kontras valid?"}
+    J -->|"Tidak"| K["Tampilkan kesalahan"]
+    J -->|"Ya"| L["Simpan preferensi tema"]
+    B -->|"Guest"| M["Lihat pengaturan tema"]
+    M --> N{"Simpan tema?"}
+    N -->|"Ya"| O["Minta login"]
+    N -->|"Tidak"| M
+```
