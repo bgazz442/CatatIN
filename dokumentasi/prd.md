@@ -13,15 +13,14 @@
 - [Feature Specifications](#feature-specifications)
 - [Non-Functional Requirements](#non-functional-requirements)
 - [Data Requirements](#data-requirements)
-- [AI Requirements](#ai-requirements)
 - [Constraints & Out of Scope](#constraints--out-of-scope)
 - [Acceptance Criteria](#acceptance-criteria)
 
 ## Product Overview
 
-CatatIn adalah aplikasi web berbahasa Indonesia untuk mengelola catatan belajar dan kegiatan produktivitas pribadi. Pengguna yang masuk dapat mencatat materi, mengelola tugas dan target, serta menggunakan asisten AI untuk mencari jawaban dari konteks yang tersedia. Aplikasi menyediakan dashboard ringkasan, pengaturan tampilan, dan panel administrasi untuk akun dengan role admin.
+CatatIn adalah aplikasi web berbahasa Indonesia untuk mengelola catatan belajar dan kegiatan produktivitas pribadi. Pengguna yang masuk dapat mencatat materi, mengelola tugas dan target, serta mengatur tampilan akun. Aplikasi menyediakan dashboard ringkasan dan panel administrasi untuk akun dengan role admin.
 
-Implementasi menggunakan Laravel 11, Blade, Tailwind CSS, dan database relasional MySQL/MariaDB. CatatIn Assistant menggunakan layanan Ollama yang dikonfigurasi terpisah.
+Implementasi menggunakan Laravel 11, Blade, Tailwind CSS, dan database relasional MySQL/MariaDB.
 
 ## Latar Belakang dan Tujuan
 
@@ -35,8 +34,7 @@ Fitur dalam aplikasi menunjukkan kebutuhan untuk menyimpan catatan belajar, menj
 2. Membantu pengguna mengelola tugas pribadi beserta status dan tenggatnya.
 3. Membantu pengguna menetapkan target dan melihat perubahan progresnya.
 4. Menampilkan ringkasan tugas dan target yang relevan pada dashboard.
-5. Memungkinkan pengguna bertanya kepada asisten tentang data yang dapat diakses akun tersebut.
-6. Memisahkan akses pengguna biasa dan admin serta membatasi akses terhadap data pribadi.
+5. Memisahkan akses pengguna biasa dan admin serta membatasi akses terhadap data pribadi.
 
 Belum ditemukan baseline analitik atau sasaran kuantitatif produk yang terkonfirmasi. Metrik keberhasilan perlu disepakati bersama pemilik produk sebelum dipakai untuk evaluasi.
 
@@ -49,14 +47,13 @@ Belum ditemukan baseline analitik atau sasaran kuantitatif produk yang terkonfir
 - Catatan belajar, kategori, favorit, dan lampiran privat.
 - Task Manager dengan kategori, status, dan tenggat.
 - Goal Tracker dengan jenis target, nilai progres, dan riwayat progres.
-- CatatIn Assistant dengan riwayat percakapan dan konteks yang diizinkan.
 - Pengaturan nama dan preferensi warna tampilan untuk pengguna.
 - Dashboard admin, manajemen akun, dan pengaturan admin.
 
 ### Batas peran produk
 
 - Aplikasi ditujukan untuk ruang kerja pribadi per akun; kolaborasi antarakun tidak tersedia.
-- Sebagian halaman publik dapat dilihat tanpa login, tetapi fitur produktivitas dan AI memerlukan akun aktif dengan role pengguna.
+- Sebagian halaman publik dapat dilihat tanpa login, tetapi fitur produktivitas memerlukan akun aktif dengan role pengguna.
 - Panel administrasi hanya untuk akun aktif dengan role admin.
 
 ## Target User dan User Persona
@@ -68,7 +65,6 @@ Persona berikut adalah hipotesis berdasarkan fitur yang tersedia dan perlu dival
 - Menyimpan catatan dan lampiran materi.
 - Mengelompokkan catatan berdasarkan kategori.
 - Mencari kembali catatan dan menggunakan favorit untuk akses cepat.
-- Bertanya kepada AI tentang materi yang didukung.
 
 ### Individu yang mengelola tugas dan target pribadi
 
@@ -86,8 +82,8 @@ Persona berikut adalah hipotesis berdasarkan fitur yang tersedia dan perlu dival
 
 | Peran | Hak akses yang terkonfirmasi |
 |---|---|
-| Guest | Melihat dashboard publik, halaman autentikasi, dan halaman pengaturan tampilan. Tidak dapat mengakses route fitur produktivitas atau AI; aksi simpan yang memerlukan akun meminta login. |
-| User aktif | Mengakses dashboard pribadi, catatan dan lampirannya, tugas, target dan riwayat progres, kategori, AI, pengaturan nama, serta preferensi tampilan miliknya. |
+| Guest | Melihat dashboard publik, halaman autentikasi, dan halaman pengaturan tampilan. Tidak dapat mengakses route fitur produktivitas; aksi simpan yang memerlukan akun meminta login. |
+| User aktif | Mengakses dashboard pribadi, catatan dan lampirannya, tugas, target dan riwayat progres, kategori, pengaturan nama, serta preferensi tampilan miliknya. |
 | Admin aktif | Mengakses panel admin, daftar dan detail pengguna, aksi manajemen yang diizinkan, dan pengaturan akun admin. Route produktivitas yang memakai middleware role user tidak termasuk akses admin. |
 | Akun nonaktif | Ditolak oleh middleware pada route yang memerlukan role user atau admin aktif. Login juga mensyaratkan akun aktif. |
 
@@ -112,10 +108,9 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 | FR-06 | P0 | Pengguna dapat membuat dan mengelola tugas, mencari dan memfilter daftar, mengatur tenggat opsional, serta mengubah status tugas miliknya. |
 | FR-07 | P0 | Pengguna dapat membuat dan mengelola target serta menambah atau mengurangi progres melalui entri riwayat. |
 | FR-08 | P1 | Pengguna dapat membuat dan mengelola kategori yang digunakan oleh data belajar dan tugas. Kategori yang sedang dipakai tidak dapat dihapus. |
-| FR-09 | P1 | Pengguna aktif dapat membuat percakapan AI, mengirim pertanyaan, membuka riwayat, dan menghapus percakapan miliknya. |
-| FR-10 | P1 | Pengguna dapat mengubah nama profil dan preferensi warna tampilan akun sendiri. |
-| FR-11 | P2 | Admin aktif dapat melihat statistik admin dan mengelola akun pengguna sesuai pembatasan role. |
-| FR-12 | P2 | Admin dapat memperbarui nama, email, dan password akunnya sendiri melalui pengaturan admin. |
+| FR-09 | P1 | Pengguna dapat mengubah nama profil dan preferensi warna tampilan akun sendiri. |
+| FR-10 | P2 | Admin aktif dapat melihat statistik admin dan mengelola akun pengguna sesuai pembatasan role. |
+| FR-11 | P2 | Admin dapat memperbarui nama, email, dan password akunnya sendiri melalui pengaturan admin. |
 
 ## Feature Specifications
 
@@ -178,16 +173,6 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 - Gambar opsional menerima JPG/JPEG/PNG/WebP hingga 5 MB dan dimensi maksimum 4096 x 4096; file disimpan privat.
 - Target dan riwayat progres hanya dapat diakses pemiliknya; penghapusan target menghapus riwayat terkait.
 
-### CatatIn Assistant
-
-- Route: `/ai`, `POST /ai/chat`, `/ai/conversations/{conversation}`, `DELETE /ai/conversations/{conversation}`.
-- Pengguna login dapat mengirim pertanyaan 3–5.000 karakter dan memilih percakapan miliknya.
-- Jawaban dapat dikirim secara streaming melalui Ollama.
-- Sistem dapat mengambil konteks catatan, lampiran teks yang didukung, tugas, target, ringkasan workspace, dan dokumentasi website sesuai intent.
-- Riwayat dan percakapan AI dibatasi berdasarkan pemilik akun. Sumber dapat ditampilkan jika tersedia.
-- Kegagalan layanan disampaikan sebagai error, bukan sebagai jawaban sukses. Chat diberi rate limit.
-- AI tidak memiliki alur untuk mengubah catatan, tugas, atau target.
-
 ### Pengaturan pengguna
 
 - Route: `GET /pengaturan`, `PUT /pengaturan/profil`, `POST /pengaturan/tampilan`.
@@ -214,14 +199,12 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 - Query dan operasi resource memeriksa kepemilikan data; UI bukan satu-satunya lapisan kontrol akses.
 - Password disimpan sebagai hash. Logout mengakhiri dan menginvalidasi sesi serta memperbarui token CSRF.
 - Lampiran catatan dan gambar target disimpan pada disk privat dan hanya disajikan setelah pemeriksaan pemilik.
-- Konten dokumen yang diberikan ke AI diperlakukan sebagai data, bukan instruksi sistem.
 - Secret, kredensial email, dan konfigurasi deployment tidak boleh disimpan di repository.
 
 ### Ketersediaan dan ketergantungan
 
 - Aplikasi memerlukan runtime Laravel dan database yang dikonfigurasi.
 - Reset password melalui email memerlukan SMTP yang dapat mengirim di environment tujuan.
-- AI memerlukan Ollama serta model chat/embedding yang dikonfigurasi; fitur selain AI tetap terpisah dari layanan tersebut.
 - Deployment memerlukan storage privat yang persisten untuk file pengguna.
 - Tidak ada SLA, target performa, atau target ketersediaan yang dapat dipastikan dari source.
 
@@ -238,7 +221,7 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 
 | Entitas | Data utama | Relasi/kepemilikan terkonfirmasi |
 |---|---|---|
-| `users` | Nama, email unik, password hash, role, status aktif, atribut autentikasi | Pemilik catatan, tugas, target, progres, percakapan AI, dan preferensi tema. |
+| `users` | Nama, email unik, password hash, role, status aktif, atribut autentikasi | Pemilik catatan, tugas, target, progres, dan preferensi tema. |
 | `catatan` | Judul, isi, kategori legacy, `category_id`, favorit, `user_id` | Dimiliki pengguna; berelasi dengan kategori dan memiliki banyak lampiran. Kolom `user_id` nullable pada migrasi untuk kompatibilitas data lama, tetapi query aplikasi membatasi ke pemilik yang login. |
 | `catatan_attachments` | Nama asli, extension, MIME, ukuran, disk, path | Anak catatan; penghapusan catatan menghapus relasi lampiran. File berada pada disk privat. |
 | `categories` | Nama unik | Tidak memiliki `user_id`; kategori merupakan data bersama dan digunakan catatan/tugas serta relasi kategori lain. |
@@ -246,10 +229,6 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 | `goals` | Nama, jenis, deskripsi, nilai target/nilai berjalan, langkah progres, satuan, tanggal, status, path gambar, `user_id` | Dimiliki pengguna dan memiliki banyak entri progres. |
 | `goal_progress_entries` | Goal, user, jumlah bertanda, catatan opsional, waktu tercatat | Berelasi ke pasangan target/pemilik; foreign key gabungan menjaga kepemilikan konsisten. |
 | `user_preferences` | Warna aksen dan warna navigasi/footer | Satu preferensi tema per pengguna. |
-| `ai_chat_conversations` | User, judul, ringkasan konteks, waktu pesan terakhir | Dimiliki satu pengguna dan memiliki banyak pesan. |
-| `ai_chat_messages` | Percakapan, role, isi, referensi sumber opsional | Anak percakapan; role user atau assistant. |
-| `ai_material_chunks` | User, jenis/sumber, potongan konten, embedding, metadata, hash | Potongan materi AI dibatasi pemilik dan sumbernya. |
-| `ai_website_knowledge_chunks` | Potongan pengetahuan situs | Pengetahuan website publik untuk retrieval AI; bukan data privat pengguna. |
 
 ### Validasi dan retensi data
 
@@ -257,31 +236,12 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 - Data privat harus menggunakan filter pemilik pada setiap pembacaan/perubahan yang relevan.
 - Kebijakan retensi, ekspor data, serta penghapusan akun dari sudut pandang operasional perlu dikonfirmasi; source tidak menetapkan kebijakan retensi umum.
 
-## AI Requirements
-
-### Kemampuan dan alur
-
-- Mengarahkan pertanyaan ke konteks yang sesuai: umum, pengetahuan website, catatan belajar, produktivitas, atau ringkasan workspace.
-- Mengambil data personal hanya dengan ID pengguna aktif; pengetahuan website publik tidak dicampurkan sebagai data milik pengguna.
-- Menggunakan Ollama yang dikonfigurasi untuk chat streaming dan embedding retrieval.
-- Menyimpan percakapan, pesan, serta referensi sumber yang tersedia.
-- Menampilkan error jika materi tidak dapat disiapkan atau provider tidak dapat menyelesaikan jawaban.
-
-### Batasan keselamatan dan akurasi
-
-- AI tidak melakukan mutasi data aplikasi melalui chat.
-- AI tidak boleh membaca data pengguna lain.
-- AI tidak mengklaim fitur yang tidak tersedia atau membuat ringkasan data yang tidak ditemukan.
-- Hanya format materi teks yang benar-benar didukung retriever yang boleh diperlakukan sebagai teks terindeks; PDF dan gambar tidak boleh diklaim diproses penuh.
-- Isi dokumen pengguna adalah input tidak tepercaya dan tidak boleh mengubah instruksi sistem.
-- Model, kualitas jawaban, dan ketersediaan Ollama bergantung pada konfigurasi deployment.
-
 ## Constraints & Out of Scope
 
 ### Constraints
 
 - Source yang diaudit adalah aplikasi web Laravel, bukan aplikasi mobile native.
-- Database, SMTP, storage privat, dan Ollama perlu disediakan/dikonfigurasi untuk environment deployment.
+- Database, SMTP, dan storage privat perlu disediakan/dikonfigurasi untuk environment deployment.
 - Kategori tersedia bersama dan tidak memiliki kepemilikan per user pada skema yang diaudit.
 - Tidak ada bukti di repository tentang baseline metrik, SLA, atau hasil riset persona.
 - Audit struktur route menemukan bahwa ada ketidaksesuaian antara status fitur yang diminta dan source checkout. Fitur yang dinyatakan telah dihapus sengaja tidak dijabarkan di PRD maupun flowchart sesuai instruksi; status penghapusannya dari aplikasi perlu diverifikasi terpisah.
@@ -290,10 +250,8 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 
 - Kolaborasi, berbagi catatan, assignment tugas, dan target bersama.
 - Pengingat otomatis berbasis tenggat.
-- Perubahan data produktivitas oleh AI.
 - Analisis otomatis konten video yang ditautkan.
 - Alur transkripsi audio/video baru; dokumentasi aplikasi menyatakan fitur tersebut nonaktif.
-- Klaim pemrosesan penuh PDF, gambar, audio, dan video oleh AI.
 - Penggantian email/password pengguna biasa pada pengaturan profil yang tersedia.
 - Target kuantitatif produk sebelum disepakati bersama pemilik produk.
 
@@ -301,13 +259,12 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 
 1. **Autentikasi:** akun dapat mendaftar dengan email unik dan password minimal 8 karakter dengan komposisi bebas; login ditolak untuk kredensial salah atau akun nonaktif; logout mengakhiri sesi.
 2. **Pemulihan password:** permintaan memberikan respons yang tidak membocorkan keberadaan email; token valid menerima password minimal 8 karakter dengan komposisi bebas; token invalid/kedaluwarsa ditolak.
-3. **Isolasi data:** pengguna tidak dapat melihat, mengubah, menghapus, atau mengunduh catatan, lampiran, tugas, target, progres, percakapan milik pengguna lain.
+3. **Isolasi data:** pengguna tidak dapat melihat, mengubah, menghapus, atau mengunduh catatan, lampiran, tugas, target, atau progres milik pengguna lain.
 4. **Dashboard:** hitungan tugas per status, target aktif, tugas mendatang tujuh hari, dan tugas terlewat menggunakan data akun aktif saja.
 5. **Catatan:** operasi CRUD, pencarian/filter/favorit, dan pengelolaan lampiran berhasil; isi atau setidaknya satu lampiran wajib tersedia; file privat tidak bisa diakses tanpa otorisasi.
 6. **Kategori:** nama duplikat ditolak tanpa membedakan kapitalisasi; kategori yang masih digunakan oleh data terkait tidak dapat dihapus.
 7. **Tugas:** hanya status yang diizinkan diterima; pencarian/filter/sort berfungsi; tenggat kosong diperbolehkan; operasi hanya berlaku untuk pemilik.
 8. **Target:** target baru mulai pada progres nol; penambahan/pengurangan progres memperbarui nilai, riwayat, dan status; progres negatif atau persentase di atas target ditolak.
-9. **AI:** chat hanya tersedia untuk user aktif, percakapan dibatasi pemilik, konteks privat dibatasi akun aktif, dan kegagalan Ollama disajikan sebagai error.
-10. **Pengaturan:** perubahan nama dan tema hanya tersimpan untuk akun pemilik; warna tema yang tidak valid atau tidak memenuhi kontras ditolak; guest tidak dapat menyimpan tema.
-11. **Admin:** route admin menolak guest/user/nonaktif; pembatasan admin utama dan admin terakhir tetap ditegakkan; admin tidak dapat menghapus atau mengubah dirinya lewat manajemen pengguna.
-12. **Scope dokumentasi:** PRD dan flowchart tidak menjelaskan fitur di luar implementasi yang diaudit; fitur yang secara eksplisit dikecualikan tidak dimasukkan sebagai alur produk.
+9. **Pengaturan:** perubahan nama dan tema hanya tersimpan untuk akun pemilik; warna tema yang tidak valid atau tidak memenuhi kontras ditolak; guest tidak dapat menyimpan tema.
+10. **Admin:** route admin menolak guest/user/nonaktif; pembatasan admin utama dan admin terakhir tetap ditegakkan; admin tidak dapat menghapus atau mengubah dirinya lewat manajemen pengguna.
+11. **Scope dokumentasi:** PRD dan flowchart tidak menjelaskan fitur di luar implementasi yang diaudit; fitur yang secara eksplisit dikecualikan tidak dimasukkan sebagai alur produk.

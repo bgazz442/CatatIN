@@ -18,11 +18,6 @@
         </span>
         @if($accountMenuContext === 'desktop')
             <span class="account-menu-trigger-name">{{ auth()->user()->name }}</span>
-        @elseif($accountMenuContext === 'chat')
-            <span class="account-menu-chat-identity">
-                <span class="account-menu-trigger-name">{{ auth()->user()->name }}</span>
-                <span class="account-menu-chat-email">{{ auth()->user()->email }}</span>
-            </span>
         @endif
         <i data-lucide="chevron-down" class="account-menu-chevron h-4 w-4"></i>
     </button>

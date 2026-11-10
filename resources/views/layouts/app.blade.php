@@ -23,7 +23,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="h-full font-sans antialiased bg-[#F8FAFC] text-[#1F2937] flex flex-col md:flex-row md:pl-64 @if(request()->routeIs('ai.index')) ai-chat-layout @endif">
+<body class="h-full font-sans antialiased bg-[#F8FAFC] text-[#1F2937] flex flex-col md:flex-row md:pl-64">
 
     <!-- Mobile Header -->
     <div id="mobile-header" class="theme-nav-surface md:hidden flex items-center justify-between bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-[100]">
@@ -93,13 +93,6 @@
                 <i data-lucide="target" class="w-4 h-4 {{ request()->routeIs('goals.*') ? 'text-[#2F6F64]' : 'text-slate-400' }}"></i>
                 <span>Goal Tracker</span>
             </a>
-            <a href="{{ auth()->check() ? route('ai.index') : route('login', ['login_required' => 1, 'redirect_to' => '/ai']) }}"
-               aria-current="{{ request()->routeIs('ai.*') ? 'page' : 'false' }}"
-               class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all {{ request()->routeIs('ai.*') ? 'bg-[#2F6F64]/10 text-[#2F6F64] font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                <i data-lucide="sparkles" class="w-4 h-4 {{ request()->routeIs('ai.*') ? 'text-[#2F6F64]' : 'text-slate-400' }}"></i>
-                <span>CatatIn Assistant</span>
-            </a>
-
             <a href="{{ route('settings') }}"
                aria-current="{{ request()->routeIs('settings') ? 'page' : 'false' }}"
                class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all {{ request()->routeIs('settings') ? 'bg-[#2F6F64]/10 text-[#2F6F64] font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
@@ -138,7 +131,7 @@
     </aside>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-screen @if(request()->routeIs('ai.index')) ai-chat-app-shell @endif">
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
         <!-- Topbar Desktop -->
         <header class="app-topbar sticky top-0 z-[100] flex min-w-0 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl md:px-7 lg:px-10">
             <div class="app-topbar-heading min-w-0">
@@ -208,7 +201,7 @@
         </div>
 
         <!-- Page Main Slot -->
-        <main class="app-main min-w-0 w-full flex-1 px-4 pb-10 pt-5 sm:px-6 md:px-8 md:pt-7 xl:px-10 @if(request()->routeIs('ai.index')) ai-chat-main @endif">
+        <main class="app-main min-w-0 w-full flex-1 px-4 pb-10 pt-5 sm:px-6 md:px-8 md:pt-7 xl:px-10">
             <div class="mx-auto w-full max-w-[1440px]">
                 @yield('content')
             </div>

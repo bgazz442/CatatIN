@@ -281,12 +281,6 @@ class ProductivityFeatureTest extends TestCase
             ->assertSee('account-menu-identity-avatar', false)
             ->assertSee('aria-expanded="false"', false)
             ->assertDontSee('Perbarui nama yang ditampilkan di CatatIn.');
-        $this->get(route('ai.index'))
-            ->assertOk()
-            ->assertSee('Menu lainnya')
-            ->assertSee('Info akun dan ubah nama')
-            ->assertDontSee('id="stop-generation"', false);
-
         $this->put(route('settings.profile.update'), ['name' => 'Nama Baru', 'return_to' => '/dashboard'])
             ->assertRedirect('/dashboard')
             ->assertSessionHas('success', 'Nama profil berhasil diperbarui.');
@@ -366,7 +360,6 @@ class ProductivityFeatureTest extends TestCase
                 'Dashboard',
                 'Task Manager',
                 'Goal Tracker',
-                'CatatIn Assistant',
                 'Pengaturan',
             ])
             ->assertDontSee('Daily Activity')
@@ -401,8 +394,6 @@ class ProductivityFeatureTest extends TestCase
         $this->get('/aktivitas')->assertNotFound();
         $this->get(route('goals.index'))->assertRedirect();
         $this->get(route('catatan.index'))->assertRedirect();
-        $this->get('/ai')->assertRedirect();
-        $this->postJson('/ai/chat', ['message' => 'Can I access this?'])->assertUnauthorized();
     }
 
     public function test_note_records_cannot_be_accessed_by_changing_the_record_id(): void

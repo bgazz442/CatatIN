@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
-use App\Http\Controllers\AiController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\CatatanAttachmentController;
@@ -64,10 +63,6 @@ Route::middleware(['auth', 'user'])->group(function () {
     Route::put('/pengaturan/profil', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
     Route::post('/pengaturan/tampilan', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
 
-    Route::get('/ai', [AiController::class, 'index'])->name('ai.index');
-    Route::post('/ai/chat', [AiController::class, 'chat'])->middleware('throttle:ai-chat')->name('ai.chat');
-    Route::get('/ai/conversations/{conversation}', [AiController::class, 'history'])->name('ai.conversation.show');
-    Route::delete('/ai/conversations/{conversation}', [AiController::class, 'destroy'])->name('ai.conversation.destroy');
 });
 
 Route::middleware(['auth', 'user'])->group(function () {

@@ -9,7 +9,6 @@
 - [Learning Notes Flow](#learning-notes-flow)
 - [Task Manager Flow](#task-manager-flow)
 - [Goal Tracker Flow](#goal-tracker-flow)
-- [CatatIn Assistant Flow](#catatin-assistant-flow)
 - [Admin Flow](#admin-flow)
 - [Settings Flow](#settings-flow)
 
@@ -34,8 +33,7 @@ flowchart TD
     L --> M["Learning Notes Flow"]
     L --> N["Task Manager Flow"]
     L --> O["Goal Tracker Flow"]
-    L --> P["CatatIn Assistant Flow"]
-    L --> Q["Settings Flow"]
+    L --> P["Settings Flow"]
     K --> R["Admin Flow"]
 ```
 
@@ -175,43 +173,6 @@ flowchart TD
 ```
 
 **Keterangan proses:** gambar target bersifat opsional dan privat. Perubahan progres dilakukan dalam transaksi agar nilai target dan entri riwayat tetap konsisten.
-
-## CatatIn Assistant Flow
-
-Assistant memerlukan user aktif dan Ollama yang tersedia. Sistem memilih konteks yang relevan, membatasi data personal pada akun aktif, lalu mengirim jawaban streaming atau error.
-
-```mermaid
-flowchart TD
-    A["Buka CatatIn Assistant"] --> B["Tampilkan percakapan milik user"]
-    B --> C["Pilih percakapan atau mulai baru"]
-    C --> D["Kirim pertanyaan"]
-    D --> E{"Pertanyaan valid dan rate limit terpenuhi?"}
-    E -->|"Tidak"| F["Tampilkan kesalahan validasi atau batas request"]
-    E -->|"Ya"| G["Tentukan intent pertanyaan"]
-    G --> H{"Konteks diperlukan?"}
-    H -->|"Tidak"| I["Siapkan prompt tanpa data personal"]
-    H -->|"Ya"| J["Ambil konteks relevan milik user"]
-    J --> K["Gabungkan konteks dan referensi sumber yang tersedia"]
-    K --> L{"Materi berhasil disiapkan?"}
-    L -->|"Tidak"| M["Kirim error layanan"]
-    L -->|"Ya"| N["Siapkan prompt dengan konteks"]
-    I --> O{"Jawaban terstruktur atau fallback tersedia?"}
-    N --> O
-    O -->|"Ya"| P["Kirim jawaban statis/terstruktur"]
-    O -->|"Tidak"| Q["Minta Ollama menghasilkan jawaban streaming"]
-    Q --> R{"Ollama berhasil?"}
-    R -->|"Tidak"| M
-    R -->|"Ya"| S["Simpan pesan assistant dan referensi"]
-    P --> T["Simpan jawaban dan referensi yang digunakan"]
-    S --> U["Tampilkan jawaban"]
-    T --> U
-    U --> V{"Pilih percakapan lain atau hapus?"}
-    V -->|"Pilih"| B
-    V -->|"Hapus percakapan milik user"| W["Hapus percakapan"]
-    W --> B
-```
-
-**Keterangan proses:** konteks dapat berasal dari catatan, lampiran teks yang didukung, tugas, target, agregat workspace, atau pengetahuan situs. AI tidak mengubah data produktivitas. Pengambilan riwayat dan penghapusan percakapan memeriksa pemilik.
 
 ## Admin Flow
 

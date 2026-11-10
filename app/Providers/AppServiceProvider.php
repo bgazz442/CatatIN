@@ -39,13 +39,5 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
-        RateLimiter::for('ai-chat', function (Request $request) {
-            $userId = (string) $request->user()->getAuthIdentifier();
-
-            return [
-                Limit::perMinute(10)->by('user:'.$userId),
-                Limit::perMinute(30)->by('ip:'.$request->ip()),
-            ];
-        });
     }
 }

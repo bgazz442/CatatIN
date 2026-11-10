@@ -2,14 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\ProcessAiTranscription;
-use App\Models\AiTranscription;
 use App\Models\Category;
 use App\Models\MediaFavorite;
 use App\Models\User;
 use App\Support\VideoLinkParser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class MediaFavoriteTest extends TestCase
@@ -123,80 +120,6 @@ class MediaFavoriteTest extends TestCase
             'category_id' => $category->id,
         ])->assertRedirect(route('media-favorites.show', $media));
         $this->assertSame('Database Normalization Updated', $media->fresh()->title);
-    }
-
-    public function test_media_page_has_no_ai_transcription_controls_or_endpoint(): void
-    {
-        $owner = User::factory()->create();
-        $category = Category::where('name', 'Pemrograman')->firstOrFail();
-        $media = MediaFavorite::create([
-            'user_id' => $owner->id,
-            'title' => 'Media tanpa pemrosesan AI',
-            'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            'platform' => 'youtube',
-            'video_id' => 'dQw4w9WgXcQ',
-            'category_id' => $category->id,
-        ]);
-
-        $this->actingAs($owner)
-            ->get(route('media-favorites.show', $media))
-            ->assertOk()
-            ->assertDontSee('Transkrip media ini')
-            ->assertDontSee('Transkrip belum didukung');
-
-        $this->assertFalse(Route::has('media-favorites.transcribe'));
-        $this->assertFalse(Route::has('ai.transcription.store'));
-    }
-
-    public function test_non_chatbot_ai_routes_are_retired(): void
-    {
-        $this->actingAs(User::factory()->create(['google_id' => 'google-retirement-test']));
-
-        foreach ([
-            'ai.test',
-            'ai.summarize-catatan',
-            'ai.save-summary',
-            'ai.transcription.index',
-            'ai.transcription.create',
-            'ai.transcription.store',
-            'ai.transcription.show',
-        ] as $routeName) {
-            $this->assertFalse(Route::has($routeName), 'Retired route still exists: '.$routeName);
-        }
-
-        $this->get('/ai/transkripsi')->assertNotFound();
-        $this->post('/ai/test')->assertNotFound();
-        $this->post('/ai/save-summary')->assertNotFound();
-    }
-
-    public function test_queued_transcription_is_disabled_without_deleting_existing_transcript_data(): void
-    {
-        $queued = AiTranscription::create([
-            'user_id' => User::factory()->create()->id,
-            'title' => 'Transkripsi antrean lama',
-            'original_name' => 'legacy.mp4',
-            'source_path' => 'ai/transcriptions/legacy.mp4',
-            'status' => 'queued',
-            'metadata' => ['source_sha256' => str_repeat('a', 64)],
-        ]);
-        $completed = AiTranscription::create([
-            'user_id' => $queued->user_id,
-            'title' => 'Transkripsi yang tersimpan',
-            'original_name' => 'saved.mp4',
-            'source_path' => 'ai/transcriptions/saved.mp4',
-            'status' => 'completed',
-            'transcript' => 'Transkrip lama tetap dipertahankan.',
-        ]);
-
-        (new ProcessAiTranscription($queued->id))->handle();
-        (new ProcessAiTranscription($completed->id))->handle();
-
-        $this->assertSame('failed', $queued->fresh()->status);
-        $this->assertSame('Fitur transkripsi AI telah dinonaktifkan.', $queued->fresh()->error_message);
-        $this->assertNull($queued->fresh()->transcript);
-        $this->assertSame('Transkrip lama tetap dipertahankan.', $completed->fresh()->transcript);
-        $this->assertSame('completed', $completed->fresh()->status);
-        $this->assertDatabaseCount('ai_transcriptions', 2);
     }
 
     public function test_category_in_use_by_media_cannot_be_deleted_and_media_can_be_deleted(): void

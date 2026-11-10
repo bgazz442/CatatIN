@@ -1,6 +1,6 @@
 # CatatIn
 
-CatatIn adalah aplikasi web Laravel untuk membantu pengguna mengelola catatan belajar dan aktivitas produktivitas dalam satu ruang pribadi. Aplikasi menyediakan dashboard, catatan dan lampiran privat, tugas, target, media belajar tersimpan, asisten AI, serta panel administrasi.
+CatatIn adalah aplikasi web Laravel untuk membantu pengguna mengelola catatan belajar dan aktivitas produktivitas dalam satu ruang pribadi. Aplikasi menyediakan dashboard, catatan dan lampiran privat, tugas, target, media belajar tersimpan, serta panel administrasi.
 
 > **Status integrasi:** aplikasi berjalan sebagai proyek Laravel lokal. Mailpit dapat digunakan untuk menguji email reset password secara lokal. Pengiriman email production melalui Brevo memerlukan kredensial SMTP dan sender/domain terverifikasi yang disediakan pemilik deployment; kredensial tersebut tidak disimpan di repository.
 
@@ -11,7 +11,6 @@ CatatIn adalah aplikasi web Laravel untuk membantu pengguna mengelola catatan be
 - [Persyaratan](#persyaratan)
 - [Menjalankan secara lokal dengan Laragon](#menjalankan-secara-lokal-dengan-laragon)
 - [Email reset password](#email-reset-password)
-- [CatatIn Assistant dan Ollama](#catatin-assistant-dan-ollama)
 - [Lampiran dan penyimpanan file](#lampiran-dan-penyimpanan-file)
 - [Akun administrator](#akun-administrator)
 - [Pengujian](#pengujian)
@@ -48,22 +47,11 @@ CatatIn adalah aplikasi web Laravel untuk membantu pengguna mengelola catatan be
 - Cari, filter, urutkan, lihat detail, ubah, dan hapus media.
 - Tautan video dapat ditampilkan melalui embed yang sesuai dengan platform yang didukung. Penyimpanan tautan tidak berarti CatatIn menganalisis isi video.
 
-### CatatIn Assistant
-
-- Percakapan AI pribadi dengan riwayat percakapan yang dapat dibuka dan dihapus.
-- Jika layanan Ollama tersedia, asisten dapat menggunakan konteks yang relevan dari catatan/lampiran, tugas, target, media tersimpan, dan pengetahuan situs.
-- Pengambilan data ruang kerja dibatasi untuk pengguna yang sedang login; permintaan chat diberi rate limit.
-- CatatIn tidak otomatis mengunduh model dan tidak mengirim prompt ke API AI berbayar eksternal.
-
 ### Pengaturan dan administrasi
 
 - Pengguna dapat mengubah nama profil dan preferensi warna tampilan miliknya.
 - Admin yang berwenang dapat melihat dashboard admin, mengelola pengguna, serta mengubah pengaturan admin.
 - Penghapusan atau penurunan status admin terakhir dibatasi oleh aplikasi.
-
-### Fitur yang sedang tidak aktif
-
-Transkripsi audio/video lama saat ini **dinonaktifkan** dan tidak tersedia sebagai alur fitur untuk pengguna. Catatan transkripsi lama dipertahankan, tetapi aplikasi tidak menerima transkripsi baru. Mengaktifkannya kembali memerlukan implementasi alur upload/status/hasil, worker, whisper.cpp, FFmpeg/ffprobe, dan model yang kompatibel.
 
 ## Teknologi
 
@@ -71,7 +59,6 @@ Transkripsi audio/video lama saat ini **dinonaktifkan** dan tidak tersedia sebag
 - Blade, Tailwind CSS 3, Vite 5, Bootstrap pada halaman autentikasi, dan ikon Lucide.
 - MySQL/MariaDB untuk data aplikasi.
 - SMTP Mailpit untuk pengembangan lokal; SMTP Brevo dapat dikonfigurasi untuk pengiriman sungguhan.
-- Ollama lokal untuk chat dan embedding CatatIn Assistant.
 
 ## Persyaratan
 
@@ -83,7 +70,6 @@ Untuk pengembangan Windows/Laragon:
 - MySQL atau MariaDB lokal.
 - Git.
 - Mailpit opsional untuk melihat email reset password lokal.
-- Ollama opsional untuk menggunakan CatatIn Assistant.
 
 ## Menjalankan secara lokal dengan Laragon
 
@@ -198,23 +184,6 @@ MAIL_FROM_NAME="CatatIn"
 
 Ganti semua nilai contoh sebelum digunakan. Jangan commit `.env`, SMTP key, password, atau kredensial. Atur `APP_URL` ke domain HTTPS production—jangan memakai localhost. Setelah kredensial diatur, bersihkan config cache bila perlu, kirim permintaan reset ke akun uji yang dapat diakses, dan pastikan email benar-benar diterima. Penerimaan oleh Mailpit hanya menguji alur lokal, bukan pengiriman Brevo ke inbox sungguhan.
 
-## CatatIn Assistant dan Ollama
-
-CatatIn Assistant memerlukan layanan Ollama yang berjalan dan dapat dijangkau dari PHP. Default aplikasi:
-
-- URL Ollama: `http://127.0.0.1:11434`
-- Model chat: `qwen3:1.7b`
-- Model embedding: `nomic-embed-text`
-
-Pasang Ollama sesuai sistem operasi, jalankan layanan, lalu ambil model default:
-
-```powershell
-ollama pull qwen3:1.7b
-ollama pull nomic-embed-text
-```
-
-Konfigurasi dapat disesuaikan melalui `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_EMBEDDING_MODEL`, `OLLAMA_TIMEOUT`, dan `OLLAMA_CONNECT_TIMEOUT`. Nilai default lengkap tersedia di `config/ollama.php`. Model harus diunduh secara terpisah; aplikasi tidak mengunduhnya otomatis. Jika Ollama tidak tersedia, fitur chat dapat mengembalikan status layanan tidak tersedia.
-
 ## Lampiran dan penyimpanan file
 
 Lampiran catatan dan gambar target disimpan pada disk privat `learning_private`, bukan direktori publik. Route pratinjau/unduh memeriksa kepemilikan sebelum mengirim file. Untuk deployment, gunakan persistent storage privat atau object storage yang dikonfigurasi dan dilindungi dengan benar. Jangan mengekspos folder storage privat melalui web server. Disk `public` hanya untuk berkas yang memang sengaja dibuat publik.
@@ -250,7 +219,7 @@ Tes reset password mencakup validasi email, token valid/kedaluwarsa/tidak valid,
 
 ## Catatan deployment
 
-Source ini adalah aplikasi Laravel full-stack dengan MySQL, session/cache, private file storage, email, dan layanan Ollama opsional. Repository saja tidak menyediakan database production, kredensial email, storage persisten, atau layanan AI. Siapkan dependency tersebut di hosting sebelum aplikasi digunakan.
+Source ini adalah aplikasi Laravel full-stack dengan MySQL, session/cache, private file storage, dan email. Repository saja tidak menyediakan database production, kredensial email, atau storage persisten. Siapkan dependency tersebut di hosting sebelum aplikasi digunakan.
 
 Untuk deployment Laravel:
 
@@ -262,11 +231,11 @@ Untuk deployment Laravel:
 6. Tinjau migrasi tertunda serta backup sebelum migrasi database.
 7. Uji email, lampiran privat, login, dan semua layanan eksternal dari environment hosting.
 
-Jangan menganggap pengiriman Brevo atau layanan production lain sudah siap sebelum konfigurasi hosting dan pengujian nyata dilakukan. Vercel saja bukan pengganti backend Laravel persisten dan layanan Ollama.
+Jangan menganggap pengiriman Brevo atau layanan production lain sudah siap sebelum konfigurasi hosting dan pengujian nyata dilakukan. Vercel saja bukan pengganti backend Laravel persisten.
 
 ## Keamanan dan data
 
-- Jangan commit `.env`, kredensial, SMTP key/API key, backup, dump SQL, log, model AI, atau file pengguna privat.
+- Jangan commit `.env`, kredensial, SMTP key/API key, backup, dump SQL, log, atau file pengguna privat.
 - Gunakan HTTPS, `APP_DEBUG=false`, secret yang unik, akun database berhak minimum, backup, dan pemantauan error untuk production.
 - Jangan mengarahkan tes atau perintah migrasi ke database production.
 - Tinjau dan backup data sebelum migrasi yang mengubah atau menghapus tabel.

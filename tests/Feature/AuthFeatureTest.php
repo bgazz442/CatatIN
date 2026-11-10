@@ -173,7 +173,6 @@ class AuthFeatureTest extends TestCase
             ->assertSee('Task Manager')
             ->assertDontSee('Daily Activity')
             ->assertSee('Goal Tracker')
-            ->assertSee('CatatIn Assistant')
             ->assertDontSee('Catatan Belajar')
             ->assertDontSee('Catatan Favorit')
             ->assertDontSee('Media Favorit')
