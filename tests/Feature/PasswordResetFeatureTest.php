@@ -195,24 +195,32 @@ class PasswordResetFeatureTest extends TestCase
         $this->get(route('password.reset', ['token' => $token, 'email' => $user->email]))
             ->assertOk()
             ->assertSee('Buat password baru')
-            ->assertSee('Minimal 10 karakter')
-            ->assertSee('Sedikitnya satu huruf besar')
-            ->assertSee('Sedikitnya satu huruf kecil')
-            ->assertSee('Sedikitnya satu angka')
-            ->assertSee('Sedikitnya satu simbol khusus')
+            ->assertSee('minimal 8 karakter')
+            ->assertSee('Kombinasi huruf, angka, atau simbol bebas')
+            ->assertDontSee('Sedikitnya satu huruf besar')
             ->assertSee('password baru ini akan menggantikan password lama');
+
+        $this->from(route('password.reset', ['token' => $token, 'email' => $user->email]))
+            ->post(route('password.update', ['token' => $token]), [
+                'token' => $token,
+                'email' => $user->email,
+                'password' => '1234567',
+                'password_confirmation' => '1234567',
+            ])
+            ->assertSessionHasErrors('password');
+        $this->assertSame($oldPasswordHash, $user->fresh()->password);
 
         $this->post(route('password.update', ['token' => $token]), [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'NewPassword456!',
-            'password_confirmation' => 'NewPassword456!',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
         ])->assertRedirect(route('login'))
             ->assertSessionHas('success');
 
         $user->refresh();
         $this->assertNotSame($oldPasswordHash, $user->password);
-        $this->assertTrue(Hash::check('NewPassword456!', $user->password));
+        $this->assertTrue(Hash::check('12345678', $user->password));
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
 
         $newPasswordHash = $user->password;
@@ -228,7 +236,7 @@ class PasswordResetFeatureTest extends TestCase
 
         $this->post(route('login.store'), [
             'email' => $user->email,
-            'password' => 'NewPassword456!',
+            'password' => '12345678',
         ])->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($user);
 
@@ -277,8 +285,8 @@ class PasswordResetFeatureTest extends TestCase
         $this->post(route('password.update', ['token' => $token]), [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'NewPassword456!',
-            'password_confirmation' => 'NewPassword456!',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
         ])->assertRedirect(route('login'));
 
         $this->assertDatabaseMissing('sessions', ['id' => str_repeat('a', 40)]);
@@ -303,7 +311,7 @@ class PasswordResetFeatureTest extends TestCase
             ->post(route('password.update', ['token' => $token]), [
                 'token' => $token,
                 'email' => $user->email,
-                'password' => 'NewPassword456!',
+                'password' => '12345678',
                 'password_confirmation' => 'DifferentPassword456!',
             ])
             ->assertSessionHasErrors('password');

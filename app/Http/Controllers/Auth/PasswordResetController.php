@@ -75,17 +75,8 @@ class PasswordResetController extends Controller
             'password' => [
                 'required',
                 'string',
-                'min:10',
+                'min:8',
                 'confirmed',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (! is_string($value)
-                        || ! preg_match('/[A-Z]/', $value)
-                        || ! preg_match('/[a-z]/', $value)
-                        || ! preg_match('/[0-9]/', $value)
-                        || ! preg_match('/[^A-Za-z0-9\s]/', $value)) {
-                        $fail('Password harus memuat huruf besar, huruf kecil, angka, dan simbol khusus.');
-                    }
-                },
             ],
         ], [
             'email.required' => 'Email wajib diisi.',

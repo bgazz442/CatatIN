@@ -134,7 +134,9 @@ class AuthFeatureTest extends TestCase
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('autocomplete="new-password"', false);
+            ->assertSee('autocomplete="new-password"', false)
+            ->assertSee('minlength="8"', false)
+            ->assertSee('Password minimal 8 karakter. Kombinasi huruf, angka, atau simbol bebas.');
     }
 
     public function test_login_and_registration_password_fields_can_be_shown_or_hidden(): void

@@ -25,7 +25,7 @@ CatatIn adalah aplikasi web Laravel untuk membantu pengguna mengelola catatan be
 - Registrasi, login, logout, dan opsi “Ingat saya”.
 - Form login dikosongkan saat pertama dibuka dan mencegah autofill sebelum pengguna memilih field; password manager browser tetap dapat menawarkan kredensial setelah field dipilih.
 - Lupa password melalui tautan email dengan token Laravel yang kedaluwarsa setelah 60 menit dan dibatasi permintaannya.
-- Password reset memerlukan minimal 10 karakter, huruf besar, huruf kecil, angka, dan simbol khusus. Setelah disimpan, password baru langsung menjadi password akun.
+- Password saat registrasi dan reset minimal 8 karakter; kombinasi huruf, angka, dan simbol bebas. Setelah reset berhasil, password baru langsung menjadi password akun.
 - Pesan permintaan reset dibuat generik agar keberadaan akun tidak diumumkan.
 - Proteksi route berbasis autentikasi dan peran pengguna/admin.
 
@@ -221,7 +221,7 @@ Lampiran catatan dan gambar target disimpan pada disk privat `learning_private`,
 
 ## Akun administrator
 
-Admin awal dibuat melalui seeder `AdminSeeder`, bukan akun yang otomatis dibuat saat registrasi biasa. Sebelum menjalankan seeder, atur `ADMIN_PASSWORD` hanya di environment lokal/secret store. Password admin minimal 16 karakter serta harus memiliki huruf besar, huruf kecil, angka, dan simbol.
+Admin awal dibuat melalui seeder `AdminSeeder`, bukan akun yang otomatis dibuat saat registrasi biasa. Sebelum menjalankan seeder, atur `ADMIN_PASSWORD` hanya di environment lokal/secret store. Password admin awal minimal 16 karakter serta harus memiliki huruf besar, huruf kecil, angka, dan simbol. Aturan password admin ini terpisah dari aturan registrasi dan reset akun pengguna.
 
 Tinjau kode seeder dan pastikan database yang dipilih benar sebelum menjalankan:
 

@@ -63,17 +63,8 @@ class AuthController extends Controller
             'password' => [
                 'required',
                 'string',
-                'min:10',
+                'min:8',
                 'confirmed',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (! is_string($value)
-                        || ! preg_match('/[A-Z]/', $value)
-                        || ! preg_match('/[a-z]/', $value)
-                        || ! preg_match('/[0-9]/', $value)
-                        || ! preg_match('/[^A-Za-z0-9\s]/', $value)) {
-                        $fail('Password harus memuat huruf besar, huruf kecil, angka, dan simbol khusus.');
-                    }
-                },
             ],
             'remember' => ['nullable', 'boolean'],
         ], [
@@ -82,7 +73,7 @@ class AuthController extends Controller
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah digunakan oleh akun lain.',
             'password.required' => 'Password wajib diisi.',
-            'password.min' => 'Password minimal 10 karakter.',
+            'password.min' => 'Password minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password harus sama dengan password.',
         ]);
         if ($validator->fails()) {

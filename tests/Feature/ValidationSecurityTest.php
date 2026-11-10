@@ -84,31 +84,20 @@ class ValidationSecurityTest extends TestCase
         ])->assertSessionHasErrors('name');
     }
 
-    public function test_registration_password_policy_rejects_each_missing_requirement(): void
+    public function test_registration_rejects_passwords_shorter_than_eight_characters(): void
     {
-        $invalidPasswords = [
-            'Password!' => 'konfirmasi_password', // fewer than 10 and no number
-            'password123!' => 'huruf_besar',
-            'PASSWORD123!' => 'huruf_kecil',
-            'PasswordABC!' => 'angka',
-            'Password123' => 'simbol',
-        ];
-
-        foreach ($invalidPasswords as $password => $unused) {
-            $email = str_replace('.', '', uniqid('secure')).'@example.com';
-            $this->from(route('login'))->post(route('register.store'), [
-                'name' => 'Pengguna Validasi',
-                'email' => $email,
-                'password' => $password,
-                'password_confirmation' => $password,
-                '_form' => 'register',
-            ])->assertSessionHasErrors('password');
-        }
+        $this->from(route('login'))->post(route('register.store'), [
+            'name' => 'Pengguna Validasi',
+            'email' => 'pendek@example.com',
+            'password' => '1234567',
+            'password_confirmation' => '1234567',
+            '_form' => 'register',
+        ])->assertSessionHasErrors('password');
     }
 
-    public function test_registration_accepts_strong_password_and_hashes_it(): void
+    public function test_registration_accepts_eight_digit_password_and_hashes_it(): void
     {
-        $password = 'Password123!';
+        $password = '12345678';
 
         $this->post(route('register.store'), [
             'name' => 'Pengguna Aman',
@@ -120,6 +109,22 @@ class ValidationSecurityTest extends TestCase
 
         $user = User::where('email', 'aman@example.com')->firstOrFail();
         $this->assertNotSame($password, $user->password);
+        $this->assertTrue(Hash::check($password, $user->password));
+    }
+
+    public function test_registration_accepts_eight_letter_password(): void
+    {
+        $password = 'abcdefgh';
+
+        $this->post(route('register.store'), [
+            'name' => 'Pengguna Huruf',
+            'email' => 'huruf@example.com',
+            'password' => $password,
+            'password_confirmation' => $password,
+            '_form' => 'register',
+        ])->assertRedirect(route('dashboard'));
+
+        $user = User::where('email', 'huruf@example.com')->firstOrFail();
         $this->assertTrue(Hash::check($password, $user->password));
     }
 

@@ -261,7 +261,7 @@
                             <div class="col-sm-6 mb-3">
                                 <label for="register-password" class="form-label">Password</label>
                                 <div class="input-group">
-                                    <input id="register-password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password" required>
+                                    <input id="register-password" type="password" name="password" minlength="8" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password" required>
                                     <button class="btn password-toggle" type="button" data-password-toggle="register-password" aria-label="Tampilkan password" aria-pressed="false">
                                         <i class="bi bi-eye" aria-hidden="true"></i>
                                     </button>
@@ -273,7 +273,7 @@
                             <div class="col-sm-6 mb-3">
                                 <label for="register-password-confirmation" class="form-label">Ulangi password</label>
                                 <div class="input-group">
-                                    <input id="register-password-confirmation" type="password" name="password_confirmation" class="form-control" autocomplete="new-password" required>
+                                    <input id="register-password-confirmation" type="password" name="password_confirmation" minlength="8" class="form-control" autocomplete="new-password" required>
                                     <button class="btn password-toggle" type="button" data-password-toggle="register-password-confirmation" aria-label="Tampilkan password" aria-pressed="false">
                                         <i class="bi bi-eye" aria-hidden="true"></i>
                                     </button>
@@ -281,13 +281,8 @@
                             </div>
                         </div>
                         <div id="password-requirements" class="mb-3 small" aria-live="polite">
-                            <div class="text-muted">Password harus memenuhi:</div>
+                            <div class="text-muted">Password minimal 8 karakter. Kombinasi huruf, angka, atau simbol bebas.</div>
                             <ul class="mt-1 mb-0 ps-3 text-muted">
-                                <li data-password-rule="length">Minimal 10 karakter</li>
-                                <li data-password-rule="uppercase">Minimal 1 huruf besar</li>
-                                <li data-password-rule="lowercase">Minimal 1 huruf kecil</li>
-                                <li data-password-rule="number">Minimal 1 angka</li>
-                                <li data-password-rule="symbol">Minimal 1 simbol khusus</li>
                                 <li data-password-rule="confirmation">Konfirmasi password harus sama</li>
                             </ul>
                         </div>
@@ -333,11 +328,6 @@
 
             const updatePasswordRequirements = () => {
                 const value = password.value;
-                setRule('length', value.length >= 10);
-                setRule('uppercase', /[A-Z]/.test(value));
-                setRule('lowercase', /[a-z]/.test(value));
-                setRule('number', /[0-9]/.test(value));
-                setRule('symbol', /[^A-Za-z0-9\s]/.test(value));
                 setRule('confirmation', value.length > 0 && confirmation.value === value);
             };
 

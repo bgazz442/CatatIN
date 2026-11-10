@@ -35,7 +35,8 @@ Login:
 Registrasi:
 - Nama wajib maksimum 255 karakter.
 - Email wajib, format email, maksimum 255 karakter, dan unique pada users.email.
-- Password wajib minimal 10 karakter, confirmed, memuat huruf besar, huruf kecil, angka, dan simbol khusus.
+- Password registrasi wajib minimal 8 karakter dan confirmed; kombinasi huruf, angka, dan simbol bebas.
+- Password reset wajib minimal 8 karakter dan confirmed; tidak ada syarat jenis karakter tertentu.
 
 ## Aturan bisnis
 - Password baru disimpan menggunakan hash Laravel.
@@ -51,7 +52,7 @@ Tidak ada role admin dalam implementasi saat ini. Guest dapat membuka halaman pu
 ## Troubleshooting
 - Jika login gagal, periksa email dan password.
 - Jika email sudah digunakan saat registrasi, gunakan email lain atau login.
-- Jika password ditolak, pastikan memenuhi seluruh aturan karakter.
+- Jika password registrasi atau reset ditolak, pastikan panjangnya minimal 8 karakter dan konfirmasi sama.
 - Jika kredensial tersimpan tidak ditawarkan, periksa pengaturan password manager Chrome pada perangkat.
 
 ## Route terkait

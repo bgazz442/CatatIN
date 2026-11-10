@@ -75,7 +75,7 @@ flowchart TD
     V --> W["Arahkan ke login"]
 ```
 
-**Keterangan proses:** password minimum 10 karakter dengan huruf besar, huruf kecil, angka, dan simbol khusus. Respons permintaan reset tidak mengungkap apakah email terdaftar. Login dan reset diberi pembatasan request.
+**Keterangan proses:** password registrasi dan reset minimum 8 karakter, tanpa syarat kombinasi karakter tertentu; konfirmasi password tetap harus sama. Respons permintaan reset tidak mengungkap apakah email terdaftar. Login dan reset diberi pembatasan request.
 
 ## Learning Notes Flow
 

@@ -123,7 +123,7 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 
 - Route utama: `/login`, `POST /login`, `POST /register`, `/forgot-password`, `/reset-password/{token}`, `POST /logout`.
 - Registrasi meminta nama, email unik, password, dan konfirmasi password.
-- Password registrasi/reset minimal 10 karakter serta berisi huruf besar, huruf kecil, angka, dan simbol khusus.
+- Password registrasi dan reset minimal 8 karakter; tidak ada syarat komposisi huruf besar/kecil, angka, atau simbol. Konfirmasi password harus sama.
 - Pengguna baru masuk setelah registrasi berhasil; akun umum menggunakan role `user`.
 - Login hanya berhasil untuk kredensial yang benar dan akun aktif. Sesi diregenerasi setelah autentikasi.
 - Permintaan reset menggunakan respons generik untuk tidak mengungkap apakah email terdaftar. Tautan reset bergantung pada konfigurasi email.
@@ -299,8 +299,8 @@ Prioritas: **P0** = alur inti; **P1** = kemampuan pendukung; **P2** = administra
 
 ## Acceptance Criteria
 
-1. **Autentikasi:** akun dapat mendaftar dengan email unik dan password sesuai kebijakan; login ditolak untuk kredensial salah atau akun nonaktif; logout mengakhiri sesi.
-2. **Pemulihan password:** permintaan memberikan respons yang tidak membocorkan keberadaan email; token valid menerima password yang memenuhi aturan; token invalid/kedaluwarsa ditolak.
+1. **Autentikasi:** akun dapat mendaftar dengan email unik dan password minimal 8 karakter dengan komposisi bebas; login ditolak untuk kredensial salah atau akun nonaktif; logout mengakhiri sesi.
+2. **Pemulihan password:** permintaan memberikan respons yang tidak membocorkan keberadaan email; token valid menerima password minimal 8 karakter dengan komposisi bebas; token invalid/kedaluwarsa ditolak.
 3. **Isolasi data:** pengguna tidak dapat melihat, mengubah, menghapus, atau mengunduh catatan, lampiran, tugas, target, progres, percakapan milik pengguna lain.
 4. **Dashboard:** hitungan tugas per status, target aktif, tugas mendatang tujuh hari, dan tugas terlewat menggunakan data akun aktif saja.
 5. **Catatan:** operasi CRUD, pencarian/filter/favorit, dan pengelolaan lampiran berhasil; isi atau setidaknya satu lampiran wajib tersedia; file privat tidak bisa diakses tanpa otorisasi.

@@ -45,14 +45,7 @@
     <main class="auth-card">
         <div class="brand">CatatIn <span class="brand-tagline">ACCOUNT ACCESS</span></div>
         <h1>Buat password baru</h1>
-        <p class="intro mb-2">Buat password baru dengan memenuhi semua kriteria berikut:</p>
-        <ul class="intro mt-0 ps-4" aria-label="Kriteria password baru">
-            <li>Minimal 10 karakter</li>
-            <li>Sedikitnya satu huruf besar (A-Z)</li>
-            <li>Sedikitnya satu huruf kecil (a-z)</li>
-            <li>Sedikitnya satu angka (0-9)</li>
-            <li>Sedikitnya satu simbol khusus, misalnya !, @, atau #</li>
-        </ul>
+        <p class="intro">Password baru minimal 8 karakter. Kombinasi huruf, angka, atau simbol bebas.</p>
         <p class="intro">Setelah berhasil disimpan, password baru ini akan menggantikan password lama dan digunakan untuk login berikutnya.</p>
 
         @if($errors->any())
@@ -69,12 +62,12 @@
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password baru</label>
-                <input id="password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password" required>
+                <input id="password" type="password" name="password" minlength="8" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password" required>
                 @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-4">
                 <label for="password_confirmation" class="form-label">Ulangi password baru</label>
-                <input id="password_confirmation" type="password" name="password_confirmation" class="form-control" autocomplete="new-password" required>
+                <input id="password_confirmation" type="password" name="password_confirmation" minlength="8" class="form-control" autocomplete="new-password" required>
             </div>
             <button type="submit" class="btn submit-button w-100">Simpan password baru</button>
         </form>
